@@ -1,1 +1,249 @@
-Cokolwiek
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dashboard – Czasy realizacji 2024-25</title>
+<style>
+  :root { --bg:#5d4037; --bg2:#4e342e; --card:#fbf6f0; --text:#3e2723; --muted:#8d6e63;
+          --S:#2e7d32; --M:#1565c0; --L:#e65100; --p50:#2e7d32; --p85:#f9a825; --p95:#c62828; }
+  * { box-sizing:border-box; }
+  body { margin:0; font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif; background:var(--bg); color:var(--text); }
+  header { background:var(--bg2); color:#fff3e0; padding:20px 32px; }
+  header h1 { margin:0; font-size:1.5rem; }
+  header p { margin:4px 0 0; color:#d7ccc8; font-size:.9rem; }
+  header a { color:#ffcc80; }
+  main { max-width:1200px; margin:0 auto; padding:24px; }
+  .card { background:var(--card); border-radius:10px; padding:20px; box-shadow:0 2px 6px rgba(0,0,0,.25); margin-bottom:24px; }
+  .card h2 { margin:0 0 12px; font-size:1.1rem; }
+  .controls { display:grid; grid-template-columns:1fr 2fr; gap:24px; align-items:center; }
+  .controls .group { display:flex; gap:16px; flex-wrap:wrap; align-items:center; }
+  .controls label { display:flex; align-items:center; gap:6px; cursor:pointer; }
+  input[type=range] { width:100%; accent-color:var(--bg); }
+  .ticks { display:flex; justify-content:space-between; font-size:.75rem; color:var(--muted); }
+  .dot { width:12px; height:12px; border-radius:50%; display:inline-block; }
+  .kpis { display:grid; grid-template-columns:repeat(auto-fit,minmax(160px,1fr)); gap:16px; margin-bottom:24px; }
+  .kpi { background:var(--card); border-radius:10px; padding:16px; box-shadow:0 2px 6px rgba(0,0,0,.25); border-top:4px solid var(--muted); }
+  .kpi .label { color:var(--muted); font-size:.8rem; text-transform:uppercase; letter-spacing:.04em; }
+  .kpi .value { font-size:1.8rem; font-weight:700; margin-top:6px; }
+  .kpi .unit { font-size:.9rem; color:var(--muted); font-weight:400; }
+  #chart { width:100%; height:auto; display:block; }
+  #chart .pt { stroke:#fff; stroke-width:1; }
+  #chart .pt:hover { stroke:#000; stroke-width:2; }
+  table { width:100%; border-collapse:collapse; font-size:.9rem; }
+  th, td { padding:8px 10px; text-align:left; border-bottom:1px solid #e0d6cf; }
+  th { color:var(--muted); font-weight:600; }
+  .num { text-align:right; }
+  #error { color:#ffcdd2; font-weight:600; }
+  footer { text-align:center; color:#d7ccc8; font-size:.8rem; padding:16px; }
+  @media (max-width:700px) { .controls { grid-template-columns:1fr; } }
+</style>
+</head>
+<body>
+<header>
+  <h1>Czasy realizacji 2024–25</h1>
+  <p>Scatterplot czasów realizacji wg daty ukończenia · źródło: <a href="Lead%20Times%20-%202024-25.xlsx">Lead Times - 2024-25.xlsx</a></p>
+</header>
+<main>
+  <p id="error"></p>
+
+  <section class="card">
+    <div class="controls">
+      <div>
+        <strong>Rozmiar</strong>
+        <div class="group" style="margin-top:8px">
+          <label><input type="checkbox" class="size-filter" value="S" checked><span class="dot" style="background:var(--S)"></span>S</label>
+          <label><input type="checkbox" class="size-filter" value="M" checked><span class="dot" style="background:var(--M)"></span>M</label>
+          <label><input type="checkbox" class="size-filter" value="L" checked><span class="dot" style="background:var(--L)"></span>L</label>
+        </div>
+      </div>
+      <div>
+        <strong>Okres prognozy:</strong> <span id="period-label">–</span>
+        <input type="range" id="period" min="3" step="3" value="3">
+        <div class="ticks" id="ticks"></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="kpis">
+    <div class="kpi"><div class="label">Elementów w próbie</div><div class="value" id="k-count">–</div></div>
+    <div class="kpi" style="border-top-color:var(--p50)"><div class="label">P50 (mediana)</div><div class="value" id="k-p50">–</div></div>
+    <div class="kpi" style="border-top-color:var(--p85)"><div class="label">P85</div><div class="value" id="k-p85">–</div></div>
+    <div class="kpi" style="border-top-color:var(--p95)"><div class="label">P95</div><div class="value" id="k-p95">–</div></div>
+  </section>
+
+  <section class="card">
+    <h2>Scatterplot czasów realizacji</h2>
+    <svg id="chart" viewBox="0 0 1100 480" role="img" aria-label="Scatterplot czasów realizacji"></svg>
+  </section>
+
+  <section class="card">
+    <h2>Percentyle wg rozmiaru (w wybranym okresie)</h2>
+    <table>
+      <thead><tr><th>Rozmiar</th><th class="num">Liczba</th><th class="num">P50</th><th class="num">P85</th><th class="num">P95</th><th class="num">Min</th><th class="num">Max</th></tr></thead>
+      <tbody id="size-table"></tbody>
+    </table>
+  </section>
+</main>
+<footer>Czas realizacji w dniach · percentyle metodą nearest-rank · okres liczony wstecz od najpóźniejszej daty ukończenia · punkty spoza okresu są wyszarzone</footer>
+
+<script>
+const DATA_FILE = 'Lead%20Times%20-%202024-25.xlsx';
+const SIZES = ['S','M','L'];
+const COLORS = { S:'#2e7d32', M:'#1565c0', L:'#e65100' };
+const PCTS = [ {p:50,c:'#2e7d32'}, {p:85,c:'#f9a825'}, {p:95,c:'#c62828'} ];
+const MONTHS = { stycznia:0, lutego:1, marca:2, kwietnia:3, maja:4, czerwca:5, lipca:6, sierpnia:7, 'września':8, 'października':9, listopada:10, grudnia:11 };
+
+// --- Minimalny czytnik XLSX (ZIP + XML) bez zewnętrznych bibliotek ---
+async function unzip(buf) {
+  const dv = new DataView(buf), u8 = new Uint8Array(buf), files = {};
+  let eocd = buf.byteLength - 22;
+  while (eocd >= 0 && dv.getUint32(eocd, true) !== 0x06054b50) eocd--;
+  if (eocd < 0) throw new Error('Plik nie jest poprawnym archiwum XLSX');
+  let p = dv.getUint32(eocd + 16, true);
+  const n = dv.getUint16(eocd + 10, true);
+  for (let i = 0; i < n; i++) {
+    const method = dv.getUint16(p + 10, true), size = dv.getUint32(p + 20, true);
+    const nl = dv.getUint16(p + 28, true), el = dv.getUint16(p + 30, true), cl = dv.getUint16(p + 32, true);
+    const local = dv.getUint32(p + 42, true);
+    const name = new TextDecoder().decode(u8.subarray(p + 46, p + 46 + nl));
+    const start = local + 30 + dv.getUint16(local + 26, true) + dv.getUint16(local + 28, true);
+    const raw = u8.subarray(start, start + size);
+    files[name] = method === 0 ? raw
+      : new Uint8Array(await new Response(new Blob([raw]).stream().pipeThrough(new DecompressionStream('deflate-raw'))).arrayBuffer());
+    p += 46 + nl + el + cl;
+  }
+  return files;
+}
+
+async function readXlsx(buf) {
+  const files = await unzip(buf);
+  const xml = name => files[name] ? new DOMParser().parseFromString(new TextDecoder().decode(files[name]), 'application/xml') : null;
+  const tags = (node, t) => [...node.getElementsByTagNameNS('*', t)];
+  const ssDoc = xml('xl/sharedStrings.xml');
+  const shared = ssDoc ? tags(ssDoc, 'si').map(si => tags(si, 't').map(t => t.textContent).join('')) : [];
+  const sheetName = Object.keys(files).filter(f => /^xl\/worksheets\/[^/]+\.xml$/.test(f)).sort()[0];
+  const sheet = xml(sheetName);
+  return tags(sheet, 'row').map(row => {
+    const out = [];
+    tags(row, 'c').forEach(c => {
+      const col = c.getAttribute('r').replace(/\d+/g, '').split('').reduce((a, ch) => a * 26 + ch.charCodeAt(0) - 64, 0) - 1;
+      const type = c.getAttribute('t'), v = tags(c, 'v')[0]?.textContent;
+      out[col] = type === 's' ? shared[+v] : type === 'inlineStr' ? tags(c, 't').map(t => t.textContent).join('')
+               : type === 'str' || type === 'b' ? v : (v == null ? null : Number(v));
+    });
+    return out;
+  });
+}
+
+function parseDate(v) {
+  if (typeof v === 'number') return new Date(Math.round((v - 25569) * 86400000));
+  const m = String(v ?? '').trim().match(/^(\d{1,2})\s+(\S+)\s+(\d{4})$/);
+  if (m && MONTHS[m[2].toLowerCase()] !== undefined) return new Date(+m[3], MONTHS[m[2].toLowerCase()], +m[1]);
+  const d = new Date(v);
+  return isNaN(d) ? null : d;
+}
+
+async function loadData() {
+  const res = await fetch(DATA_FILE);
+  if (!res.ok) throw new Error('Nie udało się pobrać pliku danych (HTTP ' + res.status + ')');
+  const [header, ...body] = await readXlsx(await res.arrayBuffer());
+  const idx = name => header.findIndex(h => String(h).trim().toLowerCase() === name);
+  const iD = idx('data ukończenia'), iS = idx('deklarowany rozmiar'), iL = idx('czas realizacji');
+  if (iD < 0 || iS < 0 || iL < 0) throw new Error('Brak oczekiwanych kolumn w arkuszu');
+  return body.map(r => ({ date: parseDate(r[iD]), size: String(r[iS] ?? '').trim().toUpperCase(), lt: Number(r[iL]) }))
+             .filter(r => r.date && Number.isFinite(r.lt));
+}
+
+// --- Statystyki ---
+function percentile(values, p) {
+  if (!values.length) return null;
+  const s = [...values].sort((a, b) => a - b);
+  return s[Math.max(0, Math.ceil(p / 100 * s.length) - 1)];
+}
+const addMonths = (d, m) => new Date(d.getFullYear(), d.getMonth() + m, d.getDate());
+const fmtDate = d => d.toLocaleDateString('pl-PL');
+const days = v => v == null ? '–' : `${v} <span class="unit">dni</span>`;
+
+let rows = [], minDate, maxDate, maxMonths;
+
+function windowStart() {
+  const months = +document.getElementById('period').value;
+  return months >= maxMonths ? minDate : addMonths(maxDate, -months);
+}
+
+// --- Wykres SVG ---
+function drawChart(sizes, from, pcts) {
+  const svg = document.getElementById('chart');
+  const W = 1100, H = 480, m = { l:60, r:110, t:20, b:50 };
+  const yMax = Math.ceil(Math.max(...rows.map(r => r.lt)) * 1.08 / 50) * 50;
+  const t0 = new Date(minDate.getFullYear(), minDate.getMonth(), 1), t1 = new Date(maxDate.getFullYear(), maxDate.getMonth() + 1, 1);
+  const x = d => m.l + (d - t0) / (t1 - t0) * (W - m.l - m.r);
+  const y = v => H - m.b - v / yMax * (H - m.t - m.b);
+  let s = '';
+
+  s += `<rect x="${x(from < t0 ? t0 : from)}" y="${m.t}" width="${x(t1) - x(from < t0 ? t0 : from)}" height="${H - m.t - m.b}" fill="#efebe9"/>`;
+  for (let v = 0; v <= yMax; v += 50)
+    s += `<line x1="${m.l}" x2="${W - m.r}" y1="${y(v)}" y2="${y(v)}" stroke="#d7ccc8"/><text x="${m.l - 8}" y="${y(v) + 4}" text-anchor="end" font-size="12" fill="#6d4c41">${v}</text>`;
+  for (let d = new Date(t0); d <= t1; d = addMonths(d, 1)) {
+    const lbl = d.getMonth() % 3 === 0;
+    s += `<line x1="${x(d)}" x2="${x(d)}" y1="${H - m.b}" y2="${H - m.b + (lbl ? 6 : 3)}" stroke="#8d6e63"/>`;
+    if (lbl) s += `<text x="${x(d)}" y="${H - m.b + 20}" text-anchor="middle" font-size="12" fill="#6d4c41">${String(d.getMonth() + 1).padStart(2, '0')}.${d.getFullYear()}</text>`;
+  }
+  s += `<line x1="${m.l}" x2="${W - m.r}" y1="${H - m.b}" y2="${H - m.b}" stroke="#5d4037"/><line x1="${m.l}" x2="${m.l}" y1="${m.t}" y2="${H - m.b}" stroke="#5d4037"/>`;
+  s += `<text x="${(m.l + W - m.r) / 2}" y="${H - 8}" text-anchor="middle" font-size="13" fill="#3e2723">Data ukończenia</text>`;
+  s += `<text transform="translate(16 ${(m.t + H - m.b) / 2}) rotate(-90)" text-anchor="middle" font-size="13" fill="#3e2723">Czas realizacji (dni)</text>`;
+
+  rows.filter(r => sizes.includes(r.size)).forEach(r => {
+    const inWin = r.date >= from;
+    s += `<circle class="pt" cx="${x(r.date)}" cy="${y(r.lt)}" r="7" fill="${inWin ? COLORS[r.size] : '#bcaaa4'}" fill-opacity="${inWin ? .85 : .5}"><title>${fmtDate(r.date)} · rozmiar ${r.size} · ${r.lt} dni${inWin ? '' : ' (poza okresem)'}</title></circle>`;
+  });
+  pcts.forEach(({p, c, v}) => {
+    if (v == null) return;
+    s += `<line x1="${m.l}" x2="${W - m.r}" y1="${y(v)}" y2="${y(v)}" stroke="${c}" stroke-width="2" stroke-dasharray="8 5"/>`;
+    s += `<rect x="${W - m.r + 6}" y="${y(v) - 10}" width="98" height="20" rx="4" fill="${c}"/><text x="${W - m.r + 55}" y="${y(v) + 4}" text-anchor="middle" font-size="12" font-weight="600" fill="#fff">P${p}: ${v} dni</text>`;
+  });
+  svg.innerHTML = s;
+}
+
+function render() {
+  const sizes = [...document.querySelectorAll('.size-filter:checked')].map(c => c.value);
+  const months = +document.getElementById('period').value;
+  const from = windowStart();
+  const sample = rows.filter(r => r.date >= from && sizes.includes(r.size)).map(r => r.lt);
+  const pcts = PCTS.map(o => ({ ...o, v: percentile(sample, o.p) }));
+
+  document.getElementById('period-label').textContent = months >= maxMonths
+    ? `całość (${fmtDate(minDate)} – ${fmtDate(maxDate)})`
+    : `ostatnie ${months} mies. (${fmtDate(from)} – ${fmtDate(maxDate)})`;
+  document.getElementById('k-count').textContent = sample.length;
+  pcts.forEach(({p, v}) => document.getElementById('k-p' + p).innerHTML = days(v));
+
+  drawChart(sizes, from, pcts);
+
+  document.getElementById('size-table').innerHTML = SIZES.map(sz => {
+    const v = rows.filter(r => r.size === sz && r.date >= from).map(r => r.lt);
+    const dim = sizes.includes(sz) ? '' : ' style="opacity:.45"';
+    return `<tr${dim}><td><span class="dot" style="background:${COLORS[sz]}"></span> ${sz}</td><td class="num">${v.length}</td>
+      <td class="num">${percentile(v, 50) ?? '–'}</td><td class="num">${percentile(v, 85) ?? '–'}</td><td class="num">${percentile(v, 95) ?? '–'}</td>
+      <td class="num">${v.length ? Math.min(...v) : '–'}</td><td class="num">${v.length ? Math.max(...v) : '–'}</td></tr>`;
+  }).join('');
+}
+
+loadData().then(data => {
+  rows = data.sort((a, b) => a.date - b.date);
+  minDate = rows[0].date; maxDate = rows[rows.length - 1].date;
+  const span = (maxDate.getFullYear() - minDate.getFullYear()) * 12 + maxDate.getMonth() - minDate.getMonth() + (maxDate.getDate() > minDate.getDate() ? 1 : 0);
+  maxMonths = Math.max(3, Math.ceil(span / 3) * 3);
+  const slider = document.getElementById('period');
+  slider.max = maxMonths; slider.value = maxMonths;
+  const ticks = [];
+  for (let v = 3; v <= maxMonths; v += 3) ticks.push(`<span>${v === maxMonths ? 'całość' : v + ' m'}</span>`);
+  document.getElementById('ticks').innerHTML = ticks.join('');
+  document.querySelectorAll('.size-filter').forEach(el => el.addEventListener('change', render));
+  slider.addEventListener('input', render);
+  render();
+}).catch(e => { document.getElementById('error').textContent = 'Błąd: ' + e.message; console.error(e); });
+</script>
+</body>
+</html>

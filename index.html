@@ -8,6 +8,7 @@
   :root { --bg:#5d4037; --bg2:#4e342e; --card:#fbf6f0; --text:#3e2723; --muted:#8d6e63;
           --S:#2e7d32; --M:#1565c0; --L:#e65100; --p50:#2e7d32; --p85:#f9a825; --p95:#c62828; }
   * { box-sizing:border-box; }
+  [hidden] { display:none !important; }
   body { margin:0; font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif; background:var(--bg); color:var(--text); }
   header { background:var(--bg2); color:#fff3e0; padding:20px 32px; }
   header h1 { margin:0; font-size:1.5rem; }
@@ -16,27 +17,69 @@
   main { max-width:1200px; margin:0 auto; padding:24px; }
   .card { background:var(--card); border-radius:10px; padding:20px; box-shadow:0 2px 6px rgba(0,0,0,.25); margin-bottom:24px; }
   .card h2 { margin:0 0 12px; font-size:1.1rem; }
-  .controls { display:grid; grid-template-columns:1fr 2fr; gap:24px; align-items:center; }
-  .controls .group { display:flex; gap:16px; flex-wrap:wrap; align-items:center; }
-  .controls label { display:flex; align-items:center; gap:6px; cursor:pointer; }
+  .group { display:flex; gap:16px; flex-wrap:wrap; align-items:center; }
+  label { cursor:pointer; }
+  .group label { display:flex; align-items:center; gap:6px; }
   input[type=range] { width:100%; accent-color:var(--bg); }
   .ticks { display:flex; justify-content:space-between; font-size:.75rem; color:var(--muted); }
-  .dot { width:12px; height:12px; border-radius:50%; display:inline-block; }
-  .kpis { display:grid; grid-template-columns:repeat(auto-fit,minmax(160px,1fr)); gap:16px; margin-bottom:24px; }
+  .dot { width:12px; height:12px; border-radius:50%; display:inline-block; vertical-align:middle; }
+  .kpis { display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:16px; margin-bottom:12px; }
   .kpi { background:var(--card); border-radius:10px; padding:16px; box-shadow:0 2px 6px rgba(0,0,0,.25); border-top:4px solid var(--muted); }
   .kpi .label { color:var(--muted); font-size:.8rem; text-transform:uppercase; letter-spacing:.04em; }
   .kpi .value { font-size:1.8rem; font-weight:700; margin-top:6px; }
+  .kpi .value .na { font-size:1rem; font-weight:400; color:var(--muted); }
   .kpi .unit { font-size:.9rem; color:var(--muted); font-weight:400; }
-  #chart { width:100%; height:auto; display:block; }
-  #chart .pt { stroke:#fff; stroke-width:1; }
-  #chart .pt:hover { stroke:#000; stroke-width:2; }
+  .kpi .desc { font-size:.8rem; margin-top:6px; }
+  .kpi .meta { font-size:.75rem; color:var(--muted); margin-top:4px; }
+  .note { padding:10px 14px; border-radius:8px; margin:0 0 12px; font-size:.9rem; }
+  .note.warn { background:#fff3cd; color:#5d4200; border:1px solid #f0d48a; }
+  .note.empty { background:#fbe9e7; color:#8d2b0b; border:1px solid #f2b8a8; }
+  .note.info { background:#efebe9; border:1px solid #d7ccc8; }
+  details.help { background:var(--card); border-radius:10px; padding:10px 16px; margin-bottom:24px; font-size:.88rem; box-shadow:0 2px 6px rgba(0,0,0,.25); }
+  details.help summary { cursor:pointer; font-weight:600; }
+  .legend { display:flex; flex-wrap:wrap; gap:14px; font-size:.85rem; margin-bottom:8px; align-items:center; }
+  .legend .line { width:22px; border-top:2px dashed; display:inline-block; vertical-align:middle; }
+  .legend .area { width:18px; height:12px; background:#e8dfd9; border:1px solid #d7ccc8; display:inline-block; vertical-align:middle; }
+  .toolbar { display:flex; flex-wrap:wrap; gap:16px; font-size:.9rem; margin-bottom:8px; }
+  #chart { width:100%; height:auto; display:block; touch-action:manipulation; }
+  #chart .pt { cursor:pointer; outline:none; }
+  #chart .pt:hover .vis, #chart .pt:focus .vis { stroke:#000; stroke-width:2.5; }
+  .forecast { border-top:1px solid #e0d6cf; margin-top:12px; padding-top:12px; }
+  .forecast .head { display:flex; flex-wrap:wrap; gap:16px; align-items:center; margin-bottom:8px; }
+  #window-label { margin-top:8px; font-size:.9rem; }
+  #point-details { border:2px solid var(--bg); border-radius:8px; padding:12px 16px; margin-top:12px; background:#fff; }
+  #point-details dl { display:grid; grid-template-columns:max-content 1fr; gap:4px 12px; margin:0 0 10px; font-size:.9rem; }
+  #point-details dt { color:var(--muted); }
+  #point-details dd { margin:0; }
   table { width:100%; border-collapse:collapse; font-size:.9rem; }
-  th, td { padding:8px 10px; text-align:left; border-bottom:1px solid #e0d6cf; }
+  th, td { padding:7px 10px; text-align:left; border-bottom:1px solid #e0d6cf; }
   th { color:var(--muted); font-weight:600; }
   .num { text-align:right; }
+  .table-wrap { max-height:420px; overflow:auto; border:1px solid #e0d6cf; border-radius:8px; }
+  .table-wrap th { position:sticky; top:0; background:var(--card); z-index:1; }
+  tr.row-error td { background:#fdecea; } tr.row-dup td { background:#fff8e1; } tr.row-edit td { background:#fff; }
+  .badge { display:inline-block; font-size:.7rem; padding:1px 6px; border-radius:10px; background:#efebe9; color:var(--muted); margin-left:4px; }
+  .actions { display:flex; gap:6px; flex-wrap:wrap; justify-content:flex-end; }
+  .actions button { padding:3px 8px; font-size:.8rem; }
+  button { font:inherit; border:1px solid var(--bg); background:var(--bg); color:#fff; border-radius:6px; padding:6px 12px; cursor:pointer; }
+  button.secondary { background:transparent; color:var(--bg); }
+  button.danger { background:#b71c1c; border-color:#b71c1c; }
+  button:disabled { opacity:.5; cursor:not-allowed; }
+  input[type=text], input[type=search], input[type=date], input[type=number], select, textarea {
+    font:inherit; padding:6px 8px; border:1px solid #bcaaa4; border-radius:6px; background:#fff; color:var(--text); max-width:100%; }
+  textarea { width:100%; min-height:90px; font-family:ui-monospace,Consolas,monospace; font-size:.85rem; }
+  .form-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(140px,1fr)); gap:12px; align-items:end; }
+  .form-grid label { display:flex; flex-direction:column; gap:4px; font-size:.85rem; }
+  .err { color:#b71c1c; font-size:.85rem; }
+  .sub { border-top:1px solid #e0d6cf; padding-top:16px; margin-top:16px; }
+  .sub h3 { margin:0 0 10px; font-size:1rem; }
+  .two-col { display:grid; grid-template-columns:1fr 1fr; gap:24px; }
+  .row-between { display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap; margin-bottom:8px; }
   #error { color:#ffcdd2; font-weight:600; }
+  #toast { position:fixed; left:50%; bottom:24px; transform:translateX(-50%); background:#3e2723; color:#fff; padding:10px 18px; border-radius:8px; box-shadow:0 4px 12px rgba(0,0,0,.35); font-size:.9rem; opacity:0; pointer-events:none; transition:opacity .25s; z-index:10; }
+  #toast.show { opacity:1; }
   footer { text-align:center; color:#d7ccc8; font-size:.8rem; padding:16px; }
-  @media (max-width:700px) { .controls { grid-template-columns:1fr; } }
+  @media (max-width:760px) { .two-col { grid-template-columns:1fr; } main { padding:12px; } }
 </style>
 </head>
 <body>
@@ -48,53 +91,150 @@
   <p id="error"></p>
 
   <section class="card">
-    <div class="controls">
-      <div>
-        <strong>Rozmiar</strong>
-        <div class="group" style="margin-top:8px">
-          <label><input type="checkbox" class="size-filter" value="S" checked><span class="dot" style="background:var(--S)"></span>S</label>
-          <label><input type="checkbox" class="size-filter" value="M" checked><span class="dot" style="background:var(--M)"></span>M</label>
-          <label><input type="checkbox" class="size-filter" value="L" checked><span class="dot" style="background:var(--L)"></span>L</label>
-        </div>
-      </div>
-      <div>
-        <strong>Okres prognozy:</strong> <span id="period-label">–</span>
-        <input type="range" id="period" min="3" step="3" value="3">
-        <div class="ticks" id="ticks"></div>
-      </div>
+    <strong>Rozmiar</strong> <span class="muted" style="font-size:.85rem;color:var(--muted)">(można wybrać kilka – dotyczy wykresu i wyliczeń)</span>
+    <div class="group" style="margin-top:8px">
+      <label><input type="checkbox" class="size-filter" value="S" checked><span class="dot" style="background:var(--S)"></span>S</label>
+      <label><input type="checkbox" class="size-filter" value="M" checked><span class="dot" style="background:var(--M)"></span>M</label>
+      <label><input type="checkbox" class="size-filter" value="L" checked><span class="dot" style="background:var(--L)"></span>L</label>
     </div>
   </section>
 
   <section class="kpis">
-    <div class="kpi"><div class="label">Elementów w próbie</div><div class="value" id="k-count">–</div></div>
-    <div class="kpi" style="border-top-color:var(--p50)"><div class="label">P50 (mediana)</div><div class="value" id="k-p50">–</div></div>
-    <div class="kpi" style="border-top-color:var(--p85)"><div class="label">P85</div><div class="value" id="k-p85">–</div></div>
-    <div class="kpi" style="border-top-color:var(--p95)"><div class="label">P95</div><div class="value" id="k-p95">–</div></div>
+    <div class="kpi"><div class="label">Elementów w próbie</div><div class="value" id="k-count">–</div>
+      <div class="desc">Aktywne zgłoszenia w okresie prognozy</div><div class="meta" id="m-count"></div></div>
+    <div class="kpi" style="border-top-color:var(--p50)"><div class="label">P50 (mediana)</div><div class="value" id="k-p50">–</div>
+      <div class="desc">50. percentyl historycznych czasów realizacji</div><div class="meta" id="m-p50"></div></div>
+    <div class="kpi" style="border-top-color:var(--p85)"><div class="label">P85</div><div class="value" id="k-p85">–</div>
+      <div class="desc">85. percentyl historycznych czasów realizacji</div><div class="meta" id="m-p85"></div></div>
+    <div class="kpi" style="border-top-color:var(--p95)"><div class="label">P95</div><div class="value" id="k-p95">–</div>
+      <div class="desc">95. percentyl historycznych czasów realizacji</div><div class="meta" id="m-p95"></div></div>
   </section>
+  <div id="sample-note"></div>
+  <details class="help">
+    <summary>Jak liczone są wyniki?</summary>
+    <p><strong>Metoda najbliższej rangi (nearest rank)</strong> – taka sama jak w poprzedniej wersji dashboardu. Czasy realizacji z próby sortujemy rosnąco; P<sub>p</sub> to wartość na pozycji ⌈p/100 · n⌉. Wynik jest zawsze rzeczywistym czasem z historii, np. P85 = 145 dni oznacza, że 85% zgłoszeń z próby zakończono w 145 dniach lub szybciej.</p>
+    <p>Próba = aktywne (niewykluczone) zgłoszenia o wybranych rozmiarach, ukończone w okresie prognozy (obie daty włącznie). Lead Time to liczba dni z kolumny „Czas realizacji” pliku źródłowego – nowe zgłoszenia podawaj w tej samej jednostce.</p>
+  </details>
 
   <section class="card">
     <h2>Scatterplot czasów realizacji</h2>
+    <div class="legend" id="legend"></div>
+    <div class="toolbar">
+      <label><input type="checkbox" id="only-window"> Pokaż tylko okres prognozy</label>
+      <label><input type="checkbox" id="show-excluded"> Pokaż wykluczone</label>
+    </div>
     <svg id="chart" viewBox="0 0 1100 480" role="img" aria-label="Scatterplot czasów realizacji"></svg>
+    <div id="point-details" hidden></div>
+
+    <div class="forecast">
+      <div class="head">
+        <strong>Okres prognozy</strong>
+        <label><input type="radio" name="mode" value="slider" checked> Suwak</label>
+        <label><input type="radio" name="mode" value="custom"> Własny zakres</label>
+      </div>
+      <div id="slider-box">
+        <input type="range" id="period" min="0" max="0" step="1" value="0" aria-label="Okres prognozy">
+        <div class="ticks" id="ticks"></div>
+      </div>
+      <div id="custom-box" class="group" hidden>
+        <label>Od <input type="date" id="custom-from"></label>
+        <label>Do <input type="date" id="custom-to"></label>
+      </div>
+      <div id="window-label"></div>
+    </div>
   </section>
 
   <section class="card">
-    <h2>Percentyle wg rozmiaru (w wybranym okresie)</h2>
+    <h2>Percentyle wg rozmiaru (w okresie prognozy)</h2>
     <table>
       <thead><tr><th>Rozmiar</th><th class="num">Liczba</th><th class="num">P50</th><th class="num">P85</th><th class="num">P95</th><th class="num">Min</th><th class="num">Max</th></tr></thead>
       <tbody id="size-table"></tbody>
     </table>
   </section>
+
+  <section class="card" id="manage">
+    <h2>Zarządzaj danymi</h2>
+    <div id="storage-note" class="note info"></div>
+
+    <div class="two-col">
+      <div>
+        <h3 style="margin:0 0 10px;font-size:1rem">Dodaj zgłoszenie</h3>
+        <form id="add-form" class="form-grid" novalidate>
+          <label>ID <input type="text" name="id" maxlength="50" required placeholder="np. ABC-123"></label>
+          <label>Rozmiar <select name="size" required><option value="">–</option><option>S</option><option>M</option><option>L</option></select></label>
+          <label>Data ukończenia <input type="date" name="date" required></label>
+          <label>Lead Time (dni) <input type="number" name="lt" min="0" step="1" required></label>
+          <button type="submit">Dodaj</button>
+        </form>
+        <p class="err" id="add-error"></p>
+      </div>
+      <div>
+        <h3 style="margin:0 0 10px;font-size:1rem">Import CSV</h3>
+        <p style="margin:0 0 8px;font-size:.85rem">Kolumny: <code>id; rozmiar; data_ukonczenia; lead_time_dni</code> (separator <code>;</code> lub <code>,</code>, data RRRR-MM-DD lub DD.MM.RRRR). <a href="#" id="csv-template">Pobierz szablon</a></p>
+        <input type="file" id="csv-file" accept=".csv,text/csv,text/plain">
+        <textarea id="csv-text" placeholder="…lub wklej tu zawartość CSV"></textarea>
+        <button type="button" id="csv-check" class="secondary">Sprawdź dane</button>
+      </div>
+    </div>
+    <div id="import-preview"></div>
+
+    <div class="sub">
+      <div class="row-between">
+        <h3 style="margin:0">Dane (aktywne zgłoszenia) <span class="badge" id="data-count"></span></h3>
+        <input type="search" id="search" placeholder="Szukaj po ID…" aria-label="Szukaj po ID">
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>ID</th><th>Rozmiar</th><th>Data ukończenia</th><th class="num">Lead Time (dni)</th><th>Źródło</th><th class="num">Akcje</th></tr></thead>
+          <tbody id="data-table"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="sub">
+      <h3>Wykluczone z analizy <span class="badge" id="excluded-count"></span></h3>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>ID</th><th>Rozmiar</th><th>Data ukończenia</th><th class="num">Lead Time (dni)</th><th>Źródło</th><th>Powód (opcjonalnie)</th><th class="num">Akcje</th></tr></thead>
+          <tbody id="excluded-table"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="sub">
+      <h3>Kopia danych</h3>
+      <p style="margin:0 0 8px;font-size:.85rem">Kopia obejmuje dodane i zaimportowane rekordy, edycje oraz wykluczenia (z powodami). Plik źródłowy 2024–25 nie jest w niej powielany.</p>
+      <div class="group">
+        <button type="button" id="backup-download">Pobierz kopię (JSON)</button>
+        <label class="secondary" style="display:inline-flex;gap:6px;align-items:center">Przywróć z kopii: <input type="file" id="backup-file" accept=".json,application/json"></label>
+        <button type="button" id="reset-local" class="danger">Wyczyść zmiany lokalne</button>
+      </div>
+    </div>
+  </section>
 </main>
-<footer>Czas realizacji w dniach · percentyle metodą nearest-rank · okres liczony wstecz od najpóźniejszej daty ukończenia · punkty spoza okresu są wyszarzone</footer>
+<footer>Czas realizacji w dniach · percentyle metodą najbliższej rangi (nearest rank) · okres suwaka liczony wstecz od najpóźniejszej daty ukończenia dla wybranych rozmiarów</footer>
+<div id="toast" role="status" aria-live="polite"></div>
 
 <script>
 const DATA_FILE = 'Lead%20Times%20-%202024-25.xlsx';
+const STORAGE_KEY = 'leadTimeDashboard.v1';
 const SIZES = ['S','M','L'];
 const COLORS = { S:'#2e7d32', M:'#1565c0', L:'#e65100' };
+const OUT_COLOR = '#bcaaa4';
 const PCTS = [ {p:50,c:'#2e7d32'}, {p:85,c:'#f9a825'}, {p:95,c:'#c62828'} ];
+const SMALL_SAMPLE = 20;
+const ORIGIN = { source:'Plik źródłowy', manual:'Dodane ręcznie', import:'Import CSV' };
 const MONTHS = { stycznia:0, lutego:1, marca:2, kwietnia:3, maja:4, czerwca:5, lipca:6, sierpnia:7, 'września':8, 'października':9, listopada:10, grudnia:11 };
+const UID_RE = /^(src|u):[\w.-]{1,40}$/;
 
-// --- Minimalny czytnik XLSX (ZIP + XML) bez zewnętrznych bibliotek ---
+const $ = id => document.getElementById(id);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const pad = n => String(n).padStart(2, '0');
+const toISO = d => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+const fmtDate = d => d.toLocaleDateString('pl-PL', { day:'2-digit', month:'2-digit', year:'numeric' });
+const days = v => `${v} <span class="unit">dni</span>`;
+
+// ---------- Minimalny czytnik XLSX (ZIP + XML) bez zewnętrznych bibliotek ----------
 async function unzip(buf) {
   const dv = new DataView(buf), u8 = new Uint8Array(buf), files = {};
   let eocd = buf.byteLength - 22;
@@ -123,9 +263,9 @@ async function readXlsx(buf) {
   const ssDoc = xml('xl/sharedStrings.xml');
   const shared = ssDoc ? tags(ssDoc, 'si').map(si => tags(si, 't').map(t => t.textContent).join('')) : [];
   const sheetName = Object.keys(files).filter(f => /^xl\/worksheets\/[^/]+\.xml$/.test(f)).sort()[0];
-  const sheet = xml(sheetName);
-  return tags(sheet, 'row').map(row => {
+  return tags(xml(sheetName), 'row').map(row => {
     const out = [];
+    out.rowNo = +row.getAttribute('r');
     tags(row, 'c').forEach(c => {
       const col = c.getAttribute('r').replace(/\d+/g, '').split('').reduce((a, ch) => a * 26 + ch.charCodeAt(0) - 64, 0) - 1;
       const type = c.getAttribute('t'), v = tags(c, 'v')[0]?.textContent;
@@ -136,114 +276,634 @@ async function readXlsx(buf) {
   });
 }
 
-function parseDate(v) {
-  if (typeof v === 'number') return new Date(Math.round((v - 25569) * 86400000));
+function parseSourceDate(v) {
+  if (typeof v === 'number') { const u = new Date(Math.round((v - 25569) * 86400000)); return new Date(u.getUTCFullYear(), u.getUTCMonth(), u.getUTCDate()); }
   const m = String(v ?? '').trim().match(/^(\d{1,2})\s+(\S+)\s+(\d{4})$/);
   if (m && MONTHS[m[2].toLowerCase()] !== undefined) return new Date(+m[3], MONTHS[m[2].toLowerCase()], +m[1]);
-  const d = new Date(v);
-  return isNaN(d) ? null : d;
+  const iso = normalizeDate(v);
+  return iso ? parseISO(iso) : null;
 }
 
-async function loadData() {
-  const res = await fetch(DATA_FILE);
+async function loadSource() {
+  const res = await fetch(DATA_FILE, { cache:'no-cache' });
   if (!res.ok) throw new Error('Nie udało się pobrać pliku danych (HTTP ' + res.status + ')');
-  const [header, ...body] = await readXlsx(await res.arrayBuffer());
-  const idx = name => header.findIndex(h => String(h).trim().toLowerCase() === name);
+  const [header = [], ...body] = await readXlsx(await res.arrayBuffer());
+  const norm = h => String(h ?? '').trim().toLowerCase();
+  const idx = name => header.findIndex(h => norm(h) === name);
   const iD = idx('data ukończenia'), iS = idx('deklarowany rozmiar'), iL = idx('czas realizacji');
+  const iId = header.findIndex(h => ['id', 'identyfikator'].includes(norm(h)));
   if (iD < 0 || iS < 0 || iL < 0) throw new Error('Brak oczekiwanych kolumn w arkuszu');
-  return body.map(r => ({ date: parseDate(r[iD]), size: String(r[iS] ?? '').trim().toUpperCase(), lt: Number(r[iL]) }))
-             .filter(r => r.date && Number.isFinite(r.lt));
+  const out = [];
+  body.forEach((r, i) => {
+    const d = parseSourceDate(r[iD]), lt = Number(r[iL]);
+    if (!d || !Number.isFinite(lt) || r[iL] == null) return;
+    const ownId = iId >= 0 && r[iId] != null ? String(r[iId]).trim() : '';
+    out.push({ uid:'src:' + (r.rowNo || i + 2), id: ownId || 'LT-' + pad3(out.length + 1),
+               size:String(r[iS] ?? '').trim().toUpperCase(), date:toISO(d), lt:Math.round(lt), origin:'source' });
+  });
+  return out;
+}
+const pad3 = n => String(n).padStart(3, '0');
+
+// ---------- Daty, walidacja ----------
+function parseISO(s) {
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(s ?? ''));
+  if (!m) return null;
+  const d = new Date(+m[1], m[2] - 1, +m[3]);
+  return d.getFullYear() === +m[1] && d.getMonth() === m[2] - 1 && d.getDate() === +m[3] ? d : null;
+}
+function normalizeDate(v) {
+  let s = String(v ?? '').trim();
+  const m = /^(\d{1,2})[.\/](\d{1,2})[.\/](\d{4})$/.exec(s);
+  if (m) s = `${m[3]}-${pad(m[2])}-${pad(m[1])}`;
+  return parseISO(s) ? s : null;
+}
+function addMonths(d, k) {
+  const t = new Date(d.getFullYear(), d.getMonth() + k, 1);
+  const last = new Date(t.getFullYear(), t.getMonth() + 1, 0).getDate();
+  return new Date(t.getFullYear(), t.getMonth(), Math.min(d.getDate(), last));
 }
 
-// --- Statystyki ---
+// Wspólna walidacja dla formularza, importu CSV, edycji i przywracania kopii.
+function validateFields(input) {
+  const errors = [];
+  const id = String(input?.id ?? '').trim();
+  if (!id) errors.push('brak ID'); else if (id.length > 50) errors.push('ID dłuższe niż 50 znaków');
+  const size = String(input?.size ?? '').trim().toUpperCase();
+  if (!SIZES.includes(size)) errors.push('rozmiar musi być S, M lub L');
+  const date = normalizeDate(input?.date);
+  if (!date) errors.push('nieprawidłowa data ukończenia (RRRR-MM-DD lub DD.MM.RRRR)');
+  const ltRaw = String(input?.lt ?? '').trim().replace(',', '.');
+  const okLt = /^\d+(\.0+)?$/.test(ltRaw) && Number(ltRaw) <= 100000;
+  if (!okLt) errors.push('Lead Time musi być liczbą całkowitą dni ≥ 0');
+  return { ok:!errors.length, errors, value:{ id, size, date, lt: okLt ? Number(ltRaw) : null } };
+}
+function idTaken(id, ignoreUid = null) {
+  const key = id.trim().toLowerCase();
+  return records.some(r => r.uid !== ignoreUid && r.id.toLowerCase() === key);
+}
+
 function percentile(values, p) {
   if (!values.length) return null;
   const s = [...values].sort((a, b) => a - b);
   return s[Math.max(0, Math.ceil(p / 100 * s.length) - 1)];
 }
-const addMonths = (d, m) => new Date(d.getFullYear(), d.getMonth() + m, d.getDate());
-const fmtDate = d => d.toLocaleDateString('pl-PL');
-const days = v => v == null ? '–' : `${v} <span class="unit">dni</span>`;
 
-let rows = [], minDate, maxDate, maxMonths;
+// ---------- Stan i zapis w przeglądarce ----------
+let source = [], records = [];
+let state = emptyState();
+let storageOk = true, lastSaved = null;
+const ui = { sliderSel:'all', mode:'slider', customFrom:'', customTo:'', onlyWindow:false, showExcluded:false,
+             selected:null, editing:null, search:'', importText:'' };
 
-function windowStart() {
-  const months = +document.getElementById('period').value;
-  return months >= maxMonths ? minDate : addMonths(maxDate, -months);
+function emptyState() { return { added:[], edits:{}, excluded:{} }; }
+
+function sanitizeState(obj) {
+  if (!obj || typeof obj !== 'object' || Array.isArray(obj)) throw new Error('Nieprawidłowy format danych');
+  const s = emptyState(); let dropped = 0;
+  const ids = new Set(), uids = new Set();
+  (Array.isArray(obj.added) ? obj.added : []).forEach(a => {
+    const v = validateFields(a);
+    const key = v.value.id.toLowerCase();
+    if (!a || typeof a.uid !== 'string' || !UID_RE.test(a.uid) || !a.uid.startsWith('u:') || uids.has(a.uid) || !v.ok || ids.has(key)) { dropped++; return; }
+    ids.add(key); uids.add(a.uid);
+    s.added.push({ uid:a.uid, ...v.value, origin: a.origin === 'import' ? 'import' : 'manual', addedAt: typeof a.addedAt === 'string' ? a.addedAt : '' });
+  });
+  if (obj.edits && typeof obj.edits === 'object')
+    for (const [uid, e] of Object.entries(obj.edits)) {
+      const v = validateFields(e);
+      if (UID_RE.test(uid) && uid.startsWith('src:') && v.ok) s.edits[uid] = v.value; else dropped++;
+    }
+  if (obj.excluded && typeof obj.excluded === 'object')
+    for (const [uid, x] of Object.entries(obj.excluded)) {
+      if (!UID_RE.test(uid)) { dropped++; continue; }
+      s.excluded[uid] = { reason: typeof x?.reason === 'string' ? x.reason.slice(0, 200) : '', at: typeof x?.at === 'string' ? x.at : '' };
+    }
+  return { state:s, dropped };
 }
 
-// --- Wykres SVG ---
-function drawChart(sizes, from, pcts) {
-  const svg = document.getElementById('chart');
-  const W = 1100, H = 480, m = { l:60, r:110, t:20, b:50 };
-  const yMax = Math.ceil(Math.max(...rows.map(r => r.lt)) * 1.08 / 50) * 50;
-  const t0 = new Date(minDate.getFullYear(), minDate.getMonth(), 1), t1 = new Date(maxDate.getFullYear(), maxDate.getMonth() + 1, 1);
+function loadState() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (raw) { const parsed = JSON.parse(raw); state = sanitizeState(parsed).state; lastSaved = parsed.savedAt || null; }
+  } catch (e) { storageOk = false; console.error(e); }
+}
+function saveState() {
+  try {
+    lastSaved = new Date().toISOString();
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({ ...state, savedAt:lastSaved }));
+    storageOk = true;
+  } catch (e) { storageOk = false; console.error(e); }
+  renderStorageNote();
+}
+function commit(msg) { saveState(); refresh(); if (msg) toast(msg); }
+
+function renderStorageNote() {
+  const el = $('storage-note');
+  if (storageOk) {
+    el.className = 'note info';
+    el.innerHTML = `💾 <strong>Zmiany są zapisane w tej przeglądarce.</strong> Strona jest statyczna (GitHub Pages), więc inne osoby i urządzenia ich nie widzą – aby je przenieść, użyj „Kopii danych”.`
+      + (lastSaved ? ` <span style="color:var(--muted)">Ostatni zapis: ${esc(new Date(lastSaved).toLocaleString('pl-PL'))}.</span>` : '');
+  } else {
+    el.className = 'note empty';
+    el.innerHTML = '⚠️ <strong>Nie można zapisać danych w tej przeglądarce</strong> (np. tryb prywatny lub zablokowana pamięć). Zmiany znikną po odświeżeniu – pobierz kopię danych.';
+  }
+}
+
+let toastTimer;
+function toast(msg) {
+  const t = $('toast'); t.textContent = msg; t.classList.add('show');
+  clearTimeout(toastTimer); toastTimer = setTimeout(() => t.classList.remove('show'), 3000);
+}
+
+function buildRecords() {
+  const src = source.map(r => {
+    const e = state.edits[r.uid];
+    return e ? { ...r, ...e, edited:true } : { ...r, edited:false };
+  });
+  return [...src, ...state.added.map(r => ({ ...r, edited:false }))]
+    .map(r => ({ ...r, dateObj:parseISO(r.date), excluded:!!state.excluded[r.uid], reason:state.excluded[r.uid]?.reason || '' }))
+    .filter(r => r.dateObj)
+    .sort((a, b) => a.dateObj - b.dateObj || a.id.localeCompare(b.id));
+}
+
+// ---------- Okres prognozy ----------
+const selectedSizes = () => [...document.querySelectorAll('.size-filter:checked')].map(c => c.value);
+
+function sliderPositions(base) {
+  const pos = [];
+  if (base.length) {
+    const min = base[0].dateObj, max = base[base.length - 1].dateObj;
+    for (let m = 3; addMonths(max, -m) > min && m <= 1200; m += 3) pos.push(m);
+  }
+  pos.push('all');
+  return pos;
+}
+
+function syncSlider(positions) {
+  if (!positions.includes(ui.sliderSel)) ui.sliderSel = 'all';
+  const s = $('period');
+  s.max = positions.length - 1;
+  s.value = positions.indexOf(ui.sliderSel);
+  s.disabled = positions.length < 2;
+  s._positions = positions;
+  const every = Math.ceil(positions.length / 12);
+  $('ticks').innerHTML = positions.map((p, i) =>
+    `<span>${p === 'all' ? 'Cała historia' : (i % every === 0 ? p + ' m' : '')}</span>`).join('');
+}
+
+function computeWindow(base) {
+  if (ui.mode === 'custom') {
+    const from = parseISO(ui.customFrom), to = parseISO(ui.customTo);
+    if (!from || !to) return { error:'Podaj obie daty własnego zakresu.' };
+    if (from > to) return { error:'Data „od” musi być wcześniejsza lub równa dacie „do”.' };
+    return { from, to, label:'własny zakres' };
+  }
+  if (!base.length) return { error:'Brak aktywnych zgłoszeń dla wybranych rozmiarów.' };
+  const min = base[0].dateObj, max = base[base.length - 1].dateObj;
+  if (ui.sliderSel === 'all') return { from:min, to:max, label:'cała historia' };
+  return { from:addMonths(max, -ui.sliderSel), to:max, label:`ostatnie ${ui.sliderSel} mies.` };
+}
+const inWindow = (r, win) => !win.error && !r.excluded && r.dateObj >= win.from && r.dateObj <= win.to;
+
+// ---------- Renderowanie ----------
+function refresh() {
+  records = buildRecords();
+  if (ui.selected && !records.some(r => r.uid === ui.selected)) ui.selected = null;
+  if (ui.editing && !records.some(r => r.uid === ui.editing && !r.excluded)) ui.editing = null;
+  render();
+  renderDataTable();
+  renderExcludedTable();
+}
+
+function render() {
+  const sizes = selectedSizes();
+  const base = records.filter(r => !r.excluded && sizes.includes(r.size));
+  syncSlider(sliderPositions(base));
+  $('slider-box').hidden = ui.mode !== 'slider';
+  $('custom-box').hidden = ui.mode !== 'custom';
+
+  const win = computeWindow(base);
+  const sample = win.error ? [] : base.filter(r => inWindow(r, win)).map(r => r.lt);
+  const n = sample.length;
+  const pcts = PCTS.map(o => ({ ...o, v: n ? percentile(sample, o.p) : null }));
+  const range = win.error ? '' : `${fmtDate(win.from)} – ${fmtDate(win.to)}`;
+
+  $('k-count').textContent = win.error ? '–' : n;
+  $('m-count').textContent = range;
+  pcts.forEach(({p, v}) => {
+    $('k-p' + p).innerHTML = v == null ? '<span class="na">brak danych</span>' : days(v);
+    $('m-p' + p).textContent = n ? `n = ${n} · ${range}` : '';
+  });
+
+  const note = $('sample-note');
+  if (win.error) note.innerHTML = `<p class="note empty">${esc(win.error)} Wartości percentyli i linie na wykresie są ukryte.</p>`;
+  else if (!n) note.innerHTML = '<p class="note empty">Brak zgłoszeń w okresie prognozy dla wybranych rozmiarów – zmień rozmiary lub zakres dat. Wartości percentyli i linie na wykresie są ukryte.</p>';
+  else if (n < SMALL_SAMPLE) note.innerHTML = `<p class="note warn">Mała próba (n = ${n}) — pojedyncze zgłoszenia mogą mocno zmienić wynik, zwłaszcza P95.</p>`;
+  else note.innerHTML = '';
+
+  if (ui.mode === 'slider' && base.length)
+    $('window-label').innerHTML = `Okres prognozy: <strong>${range}</strong> · ${esc(win.label)} · n = ${n}`
+      + ` <span style="color:var(--muted)">(liczony wstecz od najpóźniejszej daty ukończenia dla wybranych rozmiarów: ${fmtDate(base[base.length - 1].dateObj)})</span>`;
+  else if (ui.mode === 'custom' && !win.error)
+    $('window-label').innerHTML = `Okres prognozy: <strong>${range}</strong> · własny zakres · n = ${n}`;
+  else $('window-label').innerHTML = `<span class="err">${esc(win.error || '')}</span>`;
+
+  renderLegend(n > 0);
+  drawChart(sizes, win, n ? pcts : []);
+  renderDetails(win);
+
+  $('size-table').innerHTML = SIZES.map(sz => {
+    const v = win.error ? [] : records.filter(r => r.size === sz && inWindow(r, win)).map(r => r.lt);
+    const dim = sizes.includes(sz) ? '' : ' style="opacity:.45"';
+    const f = x => x ?? '–';
+    return `<tr${dim}><td><span class="dot" style="background:${COLORS[sz]}"></span> ${sz}</td><td class="num">${v.length}</td>
+      <td class="num">${f(percentile(v, 50))}</td><td class="num">${f(percentile(v, 85))}</td><td class="num">${f(percentile(v, 95))}</td>
+      <td class="num">${v.length ? Math.min(...v) : '–'}</td><td class="num">${v.length ? Math.max(...v) : '–'}</td></tr>`;
+  }).join('');
+}
+
+function renderLegend(showPct) {
+  let s = SIZES.map(sz => `<span><span class="dot" style="background:${COLORS[sz]}"></span> ${sz}</span>`).join('');
+  s += `<span><span class="dot" style="background:${OUT_COLOR};opacity:.7"></span> Poza okresem prognozy</span>`;
+  if (ui.showExcluded) s += `<span><span class="dot" style="border:2px dashed #6d4c41;background:transparent;width:13px;height:13px"></span> Wykluczone z analizy</span>`;
+  s += `<span><span class="area"></span> Okres prognozy</span>`;
+  if (showPct) s += PCTS.map(({p, c}) => `<span><span class="line" style="border-color:${c}"></span> P${p}</span>`).join('');
+  $('legend').innerHTML = s;
+}
+
+function drawChart(sizes, win, pcts) {
+  const svg = $('chart');
+  const W = 1100, H = 480, m = { l:60, r:120, t:20, b:50 };
+  const hasWin = !win.error;
+  let pts = records.filter(r => sizes.includes(r.size) && (!r.excluded || ui.showExcluded));
+  if (ui.onlyWindow) pts = pts.filter(r => inWindow(r, win));
+  if (!pts.length) {
+    svg.innerHTML = `<text x="${W / 2}" y="${H / 2}" text-anchor="middle" font-size="18" fill="#8d6e63">Brak zgłoszeń do pokazania dla wybranych filtrów</text>`;
+    return;
+  }
+  let dMin = pts[0].dateObj, dMax = pts[pts.length - 1].dateObj;
+  if (ui.onlyWindow && hasWin) { dMin = win.from; dMax = win.to; }
+  const t0 = new Date(dMin.getFullYear(), dMin.getMonth(), 1), t1 = new Date(dMax.getFullYear(), dMax.getMonth() + 1, 1);
+  const raw = Math.max(...pts.map(r => r.lt), ...pcts.map(p => p.v)) * 1.08 || 10;
+  const step = [5, 10, 25, 50, 100, 200, 500, 1000, 2500, 5000, 10000].find(s => raw / s <= 10) || 20000;
+  const yMax = Math.ceil(raw / step) * step;
   const x = d => m.l + (d - t0) / (t1 - t0) * (W - m.l - m.r);
   const y = v => H - m.b - v / yMax * (H - m.t - m.b);
+  const spanM = (t1.getFullYear() - t0.getFullYear()) * 12 + t1.getMonth() - t0.getMonth();
+  const tickStep = spanM <= 8 ? 1 : spanM <= 30 ? 3 : spanM <= 72 ? 6 : 12;
   let s = '';
 
-  s += `<rect x="${x(from < t0 ? t0 : from)}" y="${m.t}" width="${x(t1) - x(from < t0 ? t0 : from)}" height="${H - m.t - m.b}" fill="#efebe9"/>`;
-  for (let v = 0; v <= yMax; v += 50)
+  let a = null, b = null;
+  if (hasWin) {
+    a = win.from < t0 ? t0 : win.from; b = win.to > t1 ? t1 : win.to;
+    if (b >= a) s += `<rect x="${x(a)}" y="${m.t}" width="${Math.max(2, x(b) - x(a))}" height="${H - m.t - m.b}" fill="#e8dfd9"/>`;
+  }
+  for (let v = 0; v <= yMax; v += step)
     s += `<line x1="${m.l}" x2="${W - m.r}" y1="${y(v)}" y2="${y(v)}" stroke="#d7ccc8"/><text x="${m.l - 8}" y="${y(v) + 4}" text-anchor="end" font-size="12" fill="#6d4c41">${v}</text>`;
   for (let d = new Date(t0); d <= t1; d = addMonths(d, 1)) {
-    const lbl = d.getMonth() % 3 === 0;
-    s += `<line x1="${x(d)}" x2="${x(d)}" y1="${H - m.b}" y2="${H - m.b + (lbl ? 6 : 3)}" stroke="#8d6e63"/>`;
-    if (lbl) s += `<text x="${x(d)}" y="${H - m.b + 20}" text-anchor="middle" font-size="12" fill="#6d4c41">${String(d.getMonth() + 1).padStart(2, '0')}.${d.getFullYear()}</text>`;
+    const lbl = d.getMonth() % tickStep === 0;
+    if (spanM <= 72 || lbl) s += `<line x1="${x(d)}" x2="${x(d)}" y1="${H - m.b}" y2="${H - m.b + (lbl ? 6 : 3)}" stroke="#8d6e63"/>`;
+    if (lbl) s += `<text x="${x(d)}" y="${H - m.b + 20}" text-anchor="middle" font-size="12" fill="#6d4c41">${pad(d.getMonth() + 1)}.${d.getFullYear()}</text>`;
   }
   s += `<line x1="${m.l}" x2="${W - m.r}" y1="${H - m.b}" y2="${H - m.b}" stroke="#5d4037"/><line x1="${m.l}" x2="${m.l}" y1="${m.t}" y2="${H - m.b}" stroke="#5d4037"/>`;
   s += `<text x="${(m.l + W - m.r) / 2}" y="${H - 8}" text-anchor="middle" font-size="13" fill="#3e2723">Data ukończenia</text>`;
   s += `<text transform="translate(16 ${(m.t + H - m.b) / 2}) rotate(-90)" text-anchor="middle" font-size="13" fill="#3e2723">Czas realizacji (dni)</text>`;
 
-  rows.filter(r => sizes.includes(r.size)).forEach(r => {
-    const inWin = r.date >= from;
-    s += `<circle class="pt" cx="${x(r.date)}" cy="${y(r.lt)}" r="7" fill="${inWin ? COLORS[r.size] : '#bcaaa4'}" fill-opacity="${inWin ? .85 : .5}"><title>${fmtDate(r.date)} · rozmiar ${r.size} · ${r.lt} dni${inWin ? '' : ' (poza okresem)'}</title></circle>`;
-  });
-  pcts.forEach(({p, c, v}) => {
-    if (v == null) return;
-    s += `<line x1="${m.l}" x2="${W - m.r}" y1="${y(v)}" y2="${y(v)}" stroke="${c}" stroke-width="2" stroke-dasharray="8 5"/>`;
-    s += `<rect x="${W - m.r + 6}" y="${y(v) - 10}" width="98" height="20" rx="4" fill="${c}"/><text x="${W - m.r + 55}" y="${y(v) + 4}" text-anchor="middle" font-size="12" font-weight="600" fill="#fff">P${p}: ${v} dni</text>`;
+  // Linie percentyli tylko w obrębie okresu prognozy.
+  if (pcts.length && b >= a) {
+    const labels = pcts.map(o => ({ ...o, ly:y(o.v) })).sort((p, q) => p.ly - q.ly);
+    labels.forEach((o, i) => { if (i && o.ly < labels[i - 1].ly + 22) o.ly = labels[i - 1].ly + 22; });
+    const over = labels.length ? labels[labels.length - 1].ly - (H - m.b - 10) : 0;
+    if (over > 0) labels.forEach(o => o.ly -= over);
+    labels.forEach(o => {
+      s += `<line x1="${x(a)}" x2="${Math.max(x(b), x(a) + 2)}" y1="${y(o.v)}" y2="${y(o.v)}" stroke="${o.c}" stroke-width="2" stroke-dasharray="8 5" pointer-events="none"/>`;
+      s += `<rect x="${W - m.r + 8}" y="${o.ly - 10}" width="106" height="20" rx="4" fill="${o.c}"/><text x="${W - m.r + 61}" y="${o.ly + 4}" text-anchor="middle" font-size="12" font-weight="600" fill="#fff">P${o.p}: ${o.v} dni</text>`;
+    });
+  }
+
+  const ordered = [...pts].sort((p, q) => inWindow(p, win) - inWindow(q, win));
+  ordered.forEach(r => {
+    const iw = inWindow(r, win), sel = r.uid === ui.selected;
+    const cx = x(r.dateObj), cy = y(r.lt);
+    const status = r.excluded ? 'wykluczone z analizy' : iw ? 'w okresie prognozy' : 'poza okresem prognozy';
+    const vis = r.excluded
+      ? `<circle class="vis" cx="${cx}" cy="${cy}" r="7" fill="#fff" fill-opacity=".6" stroke="#6d4c41" stroke-width="1.5" stroke-dasharray="3 2"/>`
+      : `<circle class="vis" cx="${cx}" cy="${cy}" r="7" fill="${iw ? COLORS[r.size] : OUT_COLOR}" fill-opacity="${iw ? .9 : .55}" stroke="#fff" stroke-width="1"/>`;
+    s += `<g class="pt" data-uid="${esc(r.uid)}" tabindex="0" role="button" aria-label="${esc(`${r.id}, rozmiar ${r.size}, ${fmtDate(r.dateObj)}, ${r.lt} dni, ${status}`)}">`
+       + `<circle cx="${cx}" cy="${cy}" r="16" fill="transparent"/>${vis}`
+       + (sel ? `<circle cx="${cx}" cy="${cy}" r="11" fill="none" stroke="#000" stroke-width="2.5" pointer-events="none"/>` : '')
+       + `<title>${esc(`${r.id} · ${fmtDate(r.dateObj)} · rozmiar ${r.size} · ${r.lt} dni (${status})`)}</title></g>`;
   });
   svg.innerHTML = s;
 }
 
-function render() {
-  const sizes = [...document.querySelectorAll('.size-filter:checked')].map(c => c.value);
-  const months = +document.getElementById('period').value;
-  const from = windowStart();
-  const sample = rows.filter(r => r.date >= from && sizes.includes(r.size)).map(r => r.lt);
-  const pcts = PCTS.map(o => ({ ...o, v: percentile(sample, o.p) }));
-
-  document.getElementById('period-label').textContent = months >= maxMonths
-    ? `całość (${fmtDate(minDate)} – ${fmtDate(maxDate)})`
-    : `ostatnie ${months} mies. (${fmtDate(from)} – ${fmtDate(maxDate)})`;
-  document.getElementById('k-count').textContent = sample.length;
-  pcts.forEach(({p, v}) => document.getElementById('k-p' + p).innerHTML = days(v));
-
-  drawChart(sizes, from, pcts);
-
-  document.getElementById('size-table').innerHTML = SIZES.map(sz => {
-    const v = rows.filter(r => r.size === sz && r.date >= from).map(r => r.lt);
-    const dim = sizes.includes(sz) ? '' : ' style="opacity:.45"';
-    return `<tr${dim}><td><span class="dot" style="background:${COLORS[sz]}"></span> ${sz}</td><td class="num">${v.length}</td>
-      <td class="num">${percentile(v, 50) ?? '–'}</td><td class="num">${percentile(v, 85) ?? '–'}</td><td class="num">${percentile(v, 95) ?? '–'}</td>
-      <td class="num">${v.length ? Math.min(...v) : '–'}</td><td class="num">${v.length ? Math.max(...v) : '–'}</td></tr>`;
-  }).join('');
+function renderDetails(win) {
+  const box = $('point-details');
+  const r = records.find(x => x.uid === ui.selected);
+  if (!r) { box.hidden = true; box.innerHTML = ''; return; }
+  const status = r.excluded ? 'Wykluczone z analizy' : inWindow(r, win) ? 'W okresie prognozy (wlicza się do percentyli)' : 'Poza okresem prognozy';
+  box.hidden = false;
+  box.innerHTML = `<div class="row-between"><strong>Zgłoszenie ${esc(r.id)}</strong><button type="button" class="secondary" data-action="close-details">Zamknij ✕</button></div>
+    <dl><dt>Rozmiar</dt><dd>${esc(r.size)}</dd><dt>Data ukończenia</dt><dd>${fmtDate(r.dateObj)}</dd>
+    <dt>Lead Time</dt><dd>${r.lt} dni</dd><dt>Źródło</dt><dd>${ORIGIN[r.origin]}${r.edited ? ' <span class="badge">edytowane</span>' : ''}</dd>
+    <dt>Status</dt><dd>${status}</dd>${r.excluded && r.reason ? `<dt>Powód</dt><dd>${esc(r.reason)}</dd>` : ''}</dl>
+    ${r.excluded
+      ? `<button type="button" data-action="restore" data-uid="${esc(r.uid)}">Przywróć</button>`
+      : `<div class="group"><label style="flex:1">Powód wykluczenia (opcjonalnie)
+           <input type="text" id="detail-reason" maxlength="200" style="width:100%"></label>
+           <button type="button" data-action="exclude" data-uid="${esc(r.uid)}">Wyklucz z analizy</button>
+           <button type="button" class="secondary" data-action="edit" data-uid="${esc(r.uid)}">Edytuj</button></div>`}`;
 }
 
-loadData().then(data => {
-  rows = data.sort((a, b) => a.date - b.date);
-  minDate = rows[0].date; maxDate = rows[rows.length - 1].date;
-  const span = (maxDate.getFullYear() - minDate.getFullYear()) * 12 + maxDate.getMonth() - minDate.getMonth() + (maxDate.getDate() > minDate.getDate() ? 1 : 0);
-  maxMonths = Math.max(3, Math.ceil(span / 3) * 3);
-  const slider = document.getElementById('period');
-  slider.max = maxMonths; slider.value = maxMonths;
-  const ticks = [];
-  for (let v = 3; v <= maxMonths; v += 3) ticks.push(`<span>${v === maxMonths ? 'całość' : v + ' m'}</span>`);
-  document.getElementById('ticks').innerHTML = ticks.join('');
-  document.querySelectorAll('.size-filter').forEach(el => el.addEventListener('change', render));
-  slider.addEventListener('input', render);
+function sourceCell(r) {
+  return ORIGIN[r.origin] + (r.edited ? ' <span class="badge">edytowane</span>' : '');
+}
+
+function renderDataTable() {
+  const q = ui.search.trim().toLowerCase();
+  const active = records.filter(r => !r.excluded);
+  const list = active.filter(r => !q || r.id.toLowerCase().includes(q)).reverse();
+  $('data-count').textContent = q ? `${list.length} z ${active.length}` : `${active.length}`;
+  $('data-table').innerHTML = list.map(r => {
+    const u = esc(r.uid);
+    if (r.uid === ui.editing) return `<tr class="row-edit">
+      <td><input type="text" id="edit-id" maxlength="50" value="${esc(r.id)}" size="10"></td>
+      <td><select id="edit-size">${SIZES.map(sz => `<option${sz === r.size ? ' selected' : ''}>${sz}</option>`).join('')}</select></td>
+      <td><input type="date" id="edit-date" value="${esc(r.date)}"></td>
+      <td class="num"><input type="number" id="edit-lt" min="0" step="1" value="${r.lt}" style="width:90px"></td>
+      <td>${sourceCell(r)}<div class="err" id="edit-error"></div></td>
+      <td><div class="actions"><button type="button" data-action="save-edit" data-uid="${u}">Zapisz</button>
+        <button type="button" class="secondary" data-action="cancel-edit">Anuluj</button></div></td></tr>`;
+    return `<tr><td>${esc(r.id)}</td><td><span class="dot" style="background:${COLORS[r.size]}"></span> ${r.size}</td>
+      <td>${fmtDate(r.dateObj)}</td><td class="num">${r.lt}</td><td>${sourceCell(r)}</td>
+      <td><div class="actions">
+        <button type="button" class="secondary" data-action="edit" data-uid="${u}">Edytuj</button>
+        ${r.edited ? `<button type="button" class="secondary" data-action="revert" data-uid="${u}" title="Przywróć wartości z pliku źródłowego">Oryginał</button>` : ''}
+        <button type="button" class="secondary" data-action="exclude" data-uid="${u}">Wyklucz</button>
+        ${r.origin !== 'source' ? `<button type="button" class="danger" data-action="delete" data-uid="${u}">Usuń</button>` : ''}
+      </div></td></tr>`;
+  }).join('') || `<tr><td colspan="6" style="color:var(--muted)">${q ? 'Brak zgłoszeń o pasującym ID.' : 'Brak aktywnych zgłoszeń.'}</td></tr>`;
+}
+
+function renderExcludedTable() {
+  const list = records.filter(r => r.excluded);
+  $('excluded-count').textContent = list.length;
+  $('excluded-table').innerHTML = list.map(r => `<tr><td>${esc(r.id)}</td><td>${r.size}</td><td>${fmtDate(r.dateObj)}</td>
+      <td class="num">${r.lt}</td><td>${sourceCell(r)}</td>
+      <td><input type="text" class="reason-input" data-uid="${esc(r.uid)}" maxlength="200" value="${esc(r.reason)}" placeholder="np. zmiana zakresu" style="width:100%"></td>
+      <td><div class="actions"><button type="button" data-action="restore" data-uid="${esc(r.uid)}">Przywróć</button></div></td></tr>`).join('')
+    || '<tr><td colspan="7" style="color:var(--muted)">Brak wykluczonych zgłoszeń.</td></tr>';
+}
+
+// ---------- Akcje ----------
+const newUid = () => 'u:' + Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+
+function handleAction(action, uid) {
+  const r = records.find(x => x.uid === uid);
+  switch (action) {
+    case 'exclude': {
+      if (!r) return;
+      const reason = (ui.selected === uid ? $('detail-reason')?.value || '' : '').trim().slice(0, 200);
+      state.excluded[uid] = { reason, at:new Date().toISOString() };
+      if (ui.editing === uid) ui.editing = null;
+      return commit(`Wykluczono ${r.id} z analizy.`);
+    }
+    case 'restore':
+      if (!r) return;
+      delete state.excluded[uid];
+      return commit(`Przywrócono ${r.id} do analizy.`);
+    case 'delete':
+      if (!r || r.origin === 'source') return;
+      if (!confirm(`Trwale usunąć zgłoszenie ${r.id}? Tej operacji nie można cofnąć.`)) return;
+      state.added = state.added.filter(a => a.uid !== uid);
+      delete state.excluded[uid];
+      return commit(`Usunięto ${r.id}.`);
+    case 'revert':
+      if (!r) return;
+      delete state.edits[uid];
+      return commit(`Przywrócono oryginalne wartości z pliku źródłowego.`);
+    case 'edit':
+      ui.editing = uid; ui.search = ''; $('search').value = '';
+      renderDataTable();
+      $('edit-id')?.closest('tr').scrollIntoView({ block:'center', behavior:'smooth' });
+      $('edit-id')?.focus({ preventScroll:true });
+      return;
+    case 'cancel-edit': ui.editing = null; return renderDataTable();
+    case 'save-edit': return saveEdit(uid);
+    case 'close-details': ui.selected = null; return render();
+  }
+}
+
+function saveEdit(uid) {
+  const rec = records.find(x => x.uid === uid);
+  if (!rec) return;
+  const v = validateFields({ id:$('edit-id').value, size:$('edit-size').value, date:$('edit-date').value, lt:$('edit-lt').value });
+  const errs = [...v.errors];
+  if (v.ok && idTaken(v.value.id, uid)) errs.push(`ID „${v.value.id}” jest już używane`);
+  if (errs.length) { $('edit-error').textContent = 'Popraw: ' + errs.join('; '); return; }
+  if (rec.origin === 'source') {
+    const orig = source.find(s => s.uid === uid);
+    if (['id', 'size', 'date', 'lt'].every(k => orig[k] === v.value[k])) delete state.edits[uid];
+    else state.edits[uid] = v.value;
+  } else Object.assign(state.added.find(a => a.uid === uid), v.value);
+  ui.editing = null;
+  commit(`Zapisano zmiany w ${v.value.id}.`);
+}
+
+// ---------- Import CSV ----------
+const FIELD_LABEL = { id:'ID', size:'rozmiar', date:'data ukończenia', lt:'Lead Time' };
+const ALIASES = {
+  id:['id','identyfikator','klucz','key','numer','nr'],
+  size:['rozmiar','size','deklarowany rozmiar','wielkosc'],
+  date:['data','date','data ukonczenia','data zakonczenia','completion date','done date','completed','ukonczono','zakonczono'],
+  lt:['lead time','leadtime','lead time dni','lead time days','lt','czas realizacji','czas realizacji dni','dni','days'],
+};
+const normH = s => String(s).trim().toLowerCase().replace(/ł/g, 'l').normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, ' ').trim();
+
+function parseCSV(text) {
+  text = text.replace(/^\uFEFF/, '');
+  const first = text.split(/\r?\n/, 1)[0] || '';
+  const count = ch => first.split(ch).length - 1;
+  const sep = count('\t') > Math.max(count(';'), count(',')) ? '\t' : count(';') > count(',') ? ';' : ',';
+  const rows = []; let row = [], field = '', q = false, line = 1, start = 1;
+  for (let i = 0; i < text.length; i++) {
+    const c = text[i];
+    if (q) {
+      if (c === '"') { if (text[i + 1] === '"') { field += '"'; i++; } else q = false; }
+      else { if (c === '\n') line++; field += c; }
+    } else if (c === '"' && field.trim() === '') { q = true; field = ''; }
+    else if (c === sep) { row.push(field); field = ''; }
+    else if (c === '\n' || c === '\r') {
+      if (c === '\r' && text[i + 1] === '\n') i++;
+      row.push(field); rows.push({ line:start, cells:row }); row = []; field = ''; line++; start = line;
+    } else field += c;
+  }
+  if (field !== '' || row.length) { row.push(field); rows.push({ line:start, cells:row }); }
+  return rows;
+}
+
+function buildPreview(text) {
+  const rows = parseCSV(text).filter(r => r.cells.some(c => c.trim() !== ''));
+  if (!rows.length) return { error:'Brak danych do importu.' };
+  let map = { id:0, size:1, date:2, lt:3 }, dataRows = rows;
+  const h = rows[0].cells.map(normH), found = {};
+  for (const [k, al] of Object.entries(ALIASES)) { const i = h.findIndex(x => al.includes(x)); if (i >= 0) found[k] = i; }
+  if (Object.keys(found).length) {
+    const missing = Object.keys(ALIASES).filter(k => !(k in found));
+    if (missing.length) return { error:`Nagłówek (wiersz ${rows[0].line}) nie zawiera kolumn: ${missing.map(k => FIELD_LABEL[k]).join(', ')}.` };
+    map = found; dataRows = rows.slice(1);
+  }
+  if (!dataRows.length) return { error:'Plik zawiera tylko nagłówek.' };
+  const seen = new Map();
+  const out = dataRows.map(r => {
+    const input = { id:r.cells[map.id], size:r.cells[map.size], date:r.cells[map.date], lt:r.cells[map.lt] };
+    const v = validateFields(input);
+    let status = 'ok', msg = '';
+    if (!v.ok) { status = 'error'; msg = v.errors.join('; '); }
+    else {
+      const key = v.value.id.toLowerCase();
+      if (idTaken(v.value.id)) { status = 'dup'; msg = 'ID już istnieje w danych – pominięte'; }
+      else if (seen.has(key)) { status = 'dup'; msg = `ID powtórzone w pliku (wiersz ${seen.get(key)}) – pominięte`; }
+      else { seen.set(key, r.line); msg = 'OK'; }
+    }
+    return { line:r.line, input, value:v.value, status, msg };
+  });
+  return { rows:out, ok:out.filter(r => r.status === 'ok').length, err:out.filter(r => r.status === 'error').length, dup:out.filter(r => r.status === 'dup').length };
+}
+
+function renderPreview() {
+  const box = $('import-preview');
+  if (!ui.importText.trim()) { box.innerHTML = ''; return; }
+  const pv = buildPreview(ui.importText);
+  if (pv.error) { box.innerHTML = `<p class="note empty" style="margin-top:12px">${esc(pv.error)}</p>`; return; }
+  box.innerHTML = `<div class="sub"><h3>Podgląd importu</h3>
+    <p style="margin:0 0 8px">Prawidłowe: <strong>${pv.ok}</strong> · Błędy: <strong>${pv.err}</strong> · Duplikaty (pominięte): <strong>${pv.dup}</strong></p>
+    <div class="table-wrap" style="max-height:260px"><table><thead><tr><th>Wiersz</th><th>ID</th><th>Rozmiar</th><th>Data</th><th class="num">Lead Time</th><th>Status</th></tr></thead><tbody>
+    ${pv.rows.map(r => `<tr class="${r.status === 'error' ? 'row-error' : r.status === 'dup' ? 'row-dup' : ''}"><td>${r.line}</td>
+      <td>${esc(r.input.id)}</td><td>${esc(r.input.size)}</td><td>${esc(r.input.date)}</td><td class="num">${esc(r.input.lt)}</td>
+      <td>${r.status === 'error' ? '❌ ' : r.status === 'dup' ? '⚠️ ' : '✅ '}${esc(r.msg)}</td></tr>`).join('')}
+    </tbody></table></div>
+    <div class="group" style="margin-top:10px">
+      <button type="button" id="import-confirm" ${pv.ok ? '' : 'disabled'}>Zatwierdź import (${pv.ok} ${pv.ok === 1 ? 'wiersz' : 'wierszy'})</button>
+      <button type="button" class="secondary" id="import-cancel">Anuluj</button>
+      ${pv.err + pv.dup ? '<span style="font-size:.85rem;color:var(--muted)">Wiersze z błędami i duplikaty zostaną pominięte.</span>' : ''}
+    </div></div>`;
+}
+
+function clearImport() { ui.importText = ''; $('csv-text').value = ''; $('csv-file').value = ''; renderPreview(); }
+
+// ---------- Zdarzenia ----------
+document.querySelectorAll('.size-filter').forEach(el => el.addEventListener('change', render));
+$('period').addEventListener('input', e => { ui.sliderSel = e.target._positions[+e.target.value]; render(); });
+document.querySelectorAll('input[name=mode]').forEach(el => el.addEventListener('change', e => {
+  if (e.target.value === 'custom' && (!ui.customFrom || !ui.customTo)) {
+    // Własny zakres startuje od bieżącego okna suwaka.
+    const sizes = selectedSizes();
+    const sw = computeWindow(records.filter(r => !r.excluded && sizes.includes(r.size)));
+    if (!sw.error) { ui.customFrom = toISO(sw.from); ui.customTo = toISO(sw.to); $('custom-from').value = ui.customFrom; $('custom-to').value = ui.customTo; }
+  }
+  ui.mode = e.target.value;
   render();
-}).catch(e => { document.getElementById('error').textContent = 'Błąd: ' + e.message; console.error(e); });
+}));
+$('custom-from').addEventListener('change', e => { ui.customFrom = e.target.value; render(); });
+$('custom-to').addEventListener('change', e => { ui.customTo = e.target.value; render(); });
+$('only-window').addEventListener('change', e => { ui.onlyWindow = e.target.checked; render(); });
+$('show-excluded').addEventListener('change', e => { ui.showExcluded = e.target.checked; render(); });
+
+function selectPoint(uid) { ui.selected = ui.selected === uid ? null : uid; render(); if (ui.selected) $('point-details').scrollIntoView({ block:'nearest', behavior:'smooth' }); }
+$('chart').addEventListener('click', e => { const g = e.target.closest('[data-uid]'); if (g) selectPoint(g.dataset.uid); });
+$('chart').addEventListener('keydown', e => {
+  const g = e.target.closest('[data-uid]');
+  if (g && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); selectPoint(g.dataset.uid); }
+});
+
+document.addEventListener('click', e => {
+  const b = e.target.closest('[data-action]');
+  if (b) handleAction(b.dataset.action, b.dataset.uid);
+});
+$('data-table').addEventListener('keydown', e => {
+  if (!ui.editing) return;
+  if (e.key === 'Enter') { e.preventDefault(); saveEdit(ui.editing); }
+  if (e.key === 'Escape') { ui.editing = null; renderDataTable(); }
+});
+$('excluded-table').addEventListener('change', e => {
+  if (!e.target.matches('.reason-input')) return;
+  const x = state.excluded[e.target.dataset.uid];
+  if (x) { x.reason = e.target.value.trim().slice(0, 200); commit('Zapisano powód wykluczenia.'); }
+});
+$('search').addEventListener('input', e => { ui.search = e.target.value; renderDataTable(); });
+
+$('add-form').addEventListener('submit', e => {
+  e.preventDefault();
+  const f = e.target, v = validateFields({ id:f.id.value, size:f.size.value, date:f.date.value, lt:f.lt.value });
+  const errs = [...v.errors];
+  if (v.ok && idTaken(v.value.id)) errs.push(`ID „${v.value.id}” już istnieje`);
+  if (errs.length) { $('add-error').textContent = 'Popraw: ' + errs.join('; '); return; }
+  $('add-error').textContent = '';
+  state.added.push({ uid:newUid(), ...v.value, origin:'manual', addedAt:new Date().toISOString() });
+  f.reset();
+  commit(`Dodano zgłoszenie ${v.value.id}.`);
+});
+
+$('csv-file').addEventListener('change', async e => {
+  const file = e.target.files[0]; if (!file) return;
+  ui.importText = await file.text(); $('csv-text').value = ui.importText; renderPreview();
+});
+$('csv-check').addEventListener('click', () => { ui.importText = $('csv-text').value; renderPreview(); });
+$('import-preview').addEventListener('click', e => {
+  if (e.target.id === 'import-cancel') return clearImport();
+  if (e.target.id !== 'import-confirm') return;
+  const pv = buildPreview(ui.importText);   // ponowna walidacja na aktualnych danych
+  if (pv.error) return renderPreview();
+  const now = new Date().toISOString();
+  const ok = pv.rows.filter(r => r.status === 'ok');
+  ok.forEach(r => state.added.push({ uid:newUid(), ...r.value, origin:'import', addedAt:now }));
+  clearImport();
+  commit(`Zaimportowano ${ok.length} zgłoszeń` + (pv.err + pv.dup ? `, pominięto ${pv.err + pv.dup}.` : '.'));
+});
+$('csv-template').addEventListener('click', e => {
+  e.preventDefault();
+  download('lead-time-szablon.csv', 'id;rozmiar;data_ukonczenia;lead_time_dni\nABC-101;M;2026-01-15;42\nABC-102;S;2026-01-20;18\n', 'text/csv');
+});
+
+function download(name, content, type) {
+  const url = URL.createObjectURL(new Blob([content], { type: type + ';charset=utf-8' }));
+  const a = Object.assign(document.createElement('a'), { href:url, download:name });
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+$('backup-download').addEventListener('click', () => {
+  const data = { app:'lead-time-dashboard', version:1, exportedAt:new Date().toISOString(), ...state };
+  download(`lead-time-kopia-${toISO(new Date())}.json`, JSON.stringify(data, null, 2), 'application/json');
+  toast('Pobrano kopię danych.');
+});
+$('backup-file').addEventListener('change', async e => {
+  const file = e.target.files[0]; if (!file) return;
+  try {
+    const { state:s, dropped } = sanitizeState(JSON.parse(await file.text()));
+    const summary = `${s.added.length} dodanych rekordów, ${Object.keys(s.edits).length} edycji, ${Object.keys(s.excluded).length} wykluczeń`;
+    if (confirm(`Przywrócić kopię (${summary})? Obecne zmiany w tej przeglądarce zostaną zastąpione.` + (dropped ? `\n${dropped} nieprawidłowych pozycji zostanie pominiętych.` : ''))) {
+      state = s; ui.selected = ui.editing = null;
+      commit(`Przywrócono kopię: ${summary}.`);
+    }
+  } catch (err) { alert('Nie udało się wczytać kopii: ' + err.message); }
+  e.target.value = '';
+});
+$('reset-local').addEventListener('click', () => {
+  if (!confirm('Usunąć wszystkie lokalne zmiany (dodane rekordy, edycje i wykluczenia)? Dane źródłowe 2024–25 pozostaną. Najpierw możesz pobrać kopię.')) return;
+  state = emptyState(); ui.selected = ui.editing = null;
+  commit('Wyczyszczono zmiany lokalne.');
+});
+window.addEventListener('storage', e => { if (e.key === STORAGE_KEY) { loadState(); refresh(); renderStorageNote(); } });
+
+// ---------- Start ----------
+loadState();
+renderStorageNote();
+loadSource()
+  .then(s => { source = s; })
+  .catch(e => { $('error').textContent = 'Błąd wczytywania pliku źródłowego: ' + e.message + ' – pokazuję tylko dane zapisane w przeglądarce.'; console.error(e); })
+  .finally(refresh);
 </script>
 </body>
 </html>

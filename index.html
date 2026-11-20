@@ -70,9 +70,9 @@
   .badge.todo { background:#fff3cd; color:#5d4200; }
   .signal-box { border-left:5px solid #c62828; padding:8px 12px; background:#fdf7f5; margin-top:10px; border-radius:4px; font-size:.9rem; }
   .signal-box textarea { min-height:60px; font-family:inherit; }
-  #xmr-details { border:2px solid var(--bg); border-radius:8px; padding:12px 16px; margin-top:12px; background:#fff; }
-  #xmr-details dl { display:grid; grid-template-columns:max-content 1fr; gap:4px 12px; margin:0 0 6px; font-size:.9rem; }
-  #xmr-details dt { color:var(--muted); } #xmr-details dd { margin:0; }
+  .xmr-details { border:2px solid var(--bg); border-radius:8px; padding:12px 16px; margin-top:12px; background:#fff; }
+  .xmr-details dl { display:grid; grid-template-columns:max-content 1fr; gap:4px 12px; margin:0 0 6px; font-size:.9rem; }
+  .xmr-details dt { color:var(--muted); } .xmr-details dd { margin:0; }
   #point-details { border:2px solid var(--bg); border-radius:8px; padding:12px 16px; margin-top:12px; background:#fff; }
   #point-details dl { display:grid; grid-template-columns:max-content 1fr; gap:4px 12px; margin:0 0 10px; font-size:.9rem; }
   #point-details dt { color:var(--muted); }
@@ -111,13 +111,14 @@
 <body>
 <header>
   <h1>Czasy realizacji 2024–25</h1>
-  <p>Scatterplot czasów realizacji wg daty ukończenia · źródło: <a href="Lead%20Times%20-%202024-25.xlsx">Lead Times - 2024-25.xlsx</a></p>
+  <p>Scatterplot czasów realizacji wg daty ukończenia i tempo dostarczania · źródła: <a href="Lead%20Times%20-%202024-25.xlsx">Lead Times - 2024-25.xlsx</a>, <a href="Throughput%20Daily.xlsx">Throughput Daily.xlsx</a></p>
 </header>
 <main>
   <p id="error"></p>
   <nav class="tabs" role="tablist" aria-label="Widoki dashboardu">
     <button type="button" role="tab" class="tab" data-tab="lead" id="tab-btn-lead" aria-controls="tab-lead" aria-selected="true">Lead Time</button>
     <button type="button" role="tab" class="tab" data-tab="xmr" id="tab-btn-xmr" aria-controls="tab-xmr" aria-selected="false">Przewidywalność</button>
+    <button type="button" role="tab" class="tab" data-tab="tp" id="tab-btn-tp" aria-controls="tab-tp" aria-selected="false">Tempo dostarczania</button>
   </nav>
   <div id="tab-lead" role="tabpanel" aria-labelledby="tab-btn-lead">
 
@@ -302,7 +303,7 @@
       <h3 style="margin:14px 0 6px;font-size:1rem">Rodzaje sygnałów <span style="font-weight:400;font-size:.8rem;color:var(--muted)">(liczba zdarzeń: wykres X / wykres mR)</span></h3>
       <div id="xmr-sig-legend" class="sig-legend"></div>
       <div id="xmr-sig-missing"></div>
-      <div id="xmr-details" hidden></div>
+      <div id="xmr-details" class="xmr-details" hidden></div>
     </section>
     <section class="card">
       <h2>Sygnały do analizy <span class="badge" id="xmr-signal-count"></span></h2>
@@ -314,12 +315,80 @@
       <div id="xmr-table-note" style="margin-top:10px"></div>
     </section>
   </div>
+
+  <div id="tab-tp" role="tabpanel" aria-labelledby="tab-btn-tp" hidden>
+    <section class="card">
+      <h2>Tempo dostarczania – wykresy XmR (Shewhart)</h2>
+      <p style="margin:0 0 12px;font-size:.9rem">Dzienna przepustowość (delivery rate) – liczba elementów ukończonych danego dnia · źródło: <a href="Throughput%20Daily.xlsx">Throughput Daily.xlsx</a></p>
+      <div class="xmr-filters">
+        <div>
+          <strong>Dni</strong>
+          <div class="group" style="margin-top:8px">
+            <label><input type="checkbox" id="tp-weekdays"> Tylko dni robocze (pn–pt)</label>
+          </div>
+        </div>
+        <div>
+          <strong>Data</strong>
+          <div class="group" style="margin-top:8px">
+            <label>Od <input type="date" id="tp-from"></label>
+            <label>Do <input type="date" id="tp-to"></label>
+            <button type="button" class="secondary" id="tp-clear-dates">Cały zakres</button>
+          </div>
+        </div>
+      </div>
+      <div id="tp-sample" class="xmr-sample"></div>
+      <div class="sub" style="margin-top:12px;padding-top:12px">
+        <label><input type="checkbox" id="tp-change-on"> <strong>Przed i po zmianie</strong></label>
+        <div id="tp-change-box" class="group" style="margin-top:8px" hidden>
+          <label>Data zmiany <input type="date" id="tp-change-date"></label>
+          <label style="flex:1;min-width:200px">Nazwa zmiany <input type="text" id="tp-change-name" maxlength="80" placeholder="np. Wprowadziliśmy limit WIP" style="width:100%"></label>
+        </div>
+      </div>
+    </section>
+    <div id="tp-notes"></div>
+    <details class="help">
+      <summary>Jak czytać wykresy XmR tempa dostarczania?</summary>
+      <p><strong>Wykres X</strong> pokazuje przepustowość (liczbę ukończonych elementów) kolejnych dni z pliku, w kolejności dat. Linia ciągła to średnia X̄ (średnie tempo dostarczania na dzień), linie przerywane to naturalne granice procesu: UNPL = X̄ + 2,66 × mR̄ oraz LNPL = X̄ − 2,66 × mR̄. Skala zaczyna się od 0 – ujemna LNPL wypada poza skalą (jej wartość z wzoru jest w tabeli granic).</p>
+      <p><strong>Wykres mR</strong> pokazuje ruchomy rozstęp mRᵢ = |Xᵢ − Xᵢ₋₁| między kolejnymi dniami, przy drugim dniu z pary; pierwszy dzień nie ma punktu mR. URL = 3,267 × mR̄, LRL = 0.</p>
+      <p><strong>Rola granic procesu:</strong> opisują rutynową zmienność dziennego tempa, której można oczekiwać od obecnego sposobu pracy. Dni w granicach to zwykły „szum”. Granice nie są celem. Przy mniej niż 20 dniach są wstępne.</p>
+      <p><strong>Cztery rodzaje sygnałów</strong> – te same kryteria co w zakładce Przewidywalność, sprawdzane osobno na wykresie X i mR oraz w każdym okresie:</p>
+      <ul style="margin:4px 0 8px;padding-left:20px;font-size:.9rem">
+        <li><strong style="color:#c62828">● Czerwony – silny sygnał:</strong> punkt powyżej górnej lub poniżej dolnej granicy.</li>
+        <li><strong style="color:#ef6c00">◆ Pomarańczowy – umiarkowany:</strong> co najmniej 2 z 3 kolejnych punktów dalej niż 2/3 odległości do granicy, po tej samej stronie.</li>
+        <li><strong style="color:#a67c00">▲ Żółty – umiarkowany stały:</strong> co najmniej 3 z 5 kolejnych punktów dalej niż 1/3 odległości do granicy, po tej samej stronie.</li>
+        <li><strong style="color:#7b1fa2">◯ Fioletowy – do zmiany prognozy:</strong> co najmniej 8 kolejnych punktów po tej samej stronie linii centralnej; punkt na linii przerywa serię.</li>
+      </ul>
+      <p><strong>Dni bez dostaw:</strong> plik zawiera wszystkie dni kalendarzowe, także weekendy z wartością 0. Opcja „Tylko dni robocze” pomija soboty i niedziele – zmienia to X̄, mR̄ i granice, bo weekendowe zera zwiększają zmienność między kolejnymi dniami.</p>
+      <p><strong>Przed i po zmianie:</strong> dni sprzed daty zmiany tworzą pierwszy okres, od tej daty – drugi. Linie i granice liczone są osobno, a para dni przecinająca datę zmiany jest pomijana w mR. Porównanie to obserwacja: różnica nie dowodzi, że spowodowała ją zmiana.</p>
+    </details>
+    <section class="card">
+      <h2>Wykres X — dzienna przepustowość</h2>
+      <div class="legend" id="tp-legend"></div>
+      <svg id="tp-x" class="xmr-svg" role="img" aria-label="Wykres X dziennej przepustowości"></svg>
+      <h2 style="margin-top:16px">Wykres mR — różnice między kolejnymi dniami</h2>
+      <svg id="tp-mr" class="xmr-svg" role="img" aria-label="Wykres ruchomego rozstępu mR przepustowości"></svg>
+      <h3 style="margin:14px 0 6px;font-size:1rem">Rodzaje sygnałów <span style="font-weight:400;font-size:.8rem;color:var(--muted)">(liczba zdarzeń: wykres X / wykres mR)</span></h3>
+      <div id="tp-sig-legend" class="sig-legend"></div>
+      <div id="tp-sig-missing"></div>
+      <div id="tp-details" class="xmr-details" hidden></div>
+    </section>
+    <section class="card">
+      <h2>Sygnały do analizy <span class="badge" id="tp-signal-count"></span></h2>
+      <ul id="tp-signals" class="signals"></ul>
+    </section>
+    <section class="card">
+      <h2 id="tp-table-title">Granice procesu</h2>
+      <div style="overflow-x:auto"><table id="tp-table"></table></div>
+      <div id="tp-table-note" style="margin-top:10px"></div>
+    </section>
+  </div>
 </main>
 <footer>Czas realizacji w dniach · percentyle metodą najbliższej rangi (nearest rank) · okres suwaka liczony wstecz od najpóźniejszej daty ukończenia dla wybranych rozmiarów</footer>
 <div id="toast" role="status" aria-live="polite"></div>
 
 <script>
 const DATA_FILE = 'Lead%20Times%20-%202024-25.xlsx';
+const TP_FILE = 'Throughput%20Daily.xlsx';
 const STORAGE_KEY = 'leadTimeDashboard.v1';
 const SIZES = ['S','M','L'];
 const COLORS = { S:'#2e7d32', M:'#1565c0', L:'#e65100' };
@@ -459,7 +528,8 @@ let storageOk = true, lastSaved = null;
 const ui = { sliderSel:'all', mode:'slider', customFrom:'', customTo:'', onlyWindow:false, showExcluded:false,
              selected:null, editing:null, search:'', importText:'' };
 
-function emptyState() { return { added:[], edits:{}, excluded:{}, notes:{}, xmr:{ changeOn:false, changeDate:'', changeName:'' } }; }
+function emptyChange() { return { changeOn:false, changeDate:'', changeName:'' }; }
+function emptyState() { return { added:[], edits:{}, excluded:{}, notes:{}, xmr:emptyChange(), tp:emptyChange() }; }
 
 function sanitizeState(obj) {
   if (!obj || typeof obj !== 'object' || Array.isArray(obj)) throw new Error('Nieprawidłowy format danych');
@@ -486,9 +556,11 @@ function sanitizeState(obj) {
     for (const [k, v] of Object.entries(obj.notes)) {
       if (/^[\w:.|-]{1,200}$/.test(k) && typeof v === 'string' && v.trim()) s.notes[k] = v.slice(0, 300); else dropped++;
     }
-  const x = obj.xmr;
-  if (x && typeof x === 'object')
-    s.xmr = { changeOn:!!x.changeOn, changeDate:normalizeDate(x.changeDate) || '', changeName:typeof x.changeName === 'string' ? x.changeName.slice(0, 80) : '' };
+  ['xmr', 'tp'].forEach(k => {
+    const x = obj[k];
+    if (x && typeof x === 'object')
+      s[k] = { changeOn:!!x.changeOn, changeDate:normalizeDate(x.changeDate) || '', changeName:typeof x.changeName === 'string' ? x.changeName.slice(0, 80) : '' };
+  });
   return { state:s, dropped };
 }
 
@@ -586,6 +658,7 @@ function refresh() {
   renderExcludedTable();
   syncXmrInputs();
   renderXmr();
+  renderTp();
 }
 
 function render() {
@@ -1009,15 +1082,59 @@ $('reset-local').addEventListener('click', () => {
 });
 window.addEventListener('storage', e => { if (e.key === STORAGE_KEY) { loadState(); refresh(); renderStorageNote(); } });
 
-// ---------- Przewidywalność: wykresy XmR ----------
+// ---------- Wykresy XmR (Shewhart) – wspólne dla zakładek Przewidywalność i Tempo dostarczania ----------
 const XMR = { E2:2.66, D4:3.267, RUN:8 };
 const xui = { from:'', to:'', sizes:[...SIZES], selected:null };
-let xmrLast = null;
+const tui = { from:'', to:'', weekdays:false, selected:null };
 const f1 = v => v == null ? '–' : v.toLocaleString('pl-PL', { minimumFractionDigits:1, maximumFractionDigits:1 });
 const fmtShort = d => `${pad(d.getDate())}.${pad(d.getMonth() + 1)}.${String(d.getFullYear()).slice(2)}`;
+const fmtDay = d => `${fmtDate(d)} (${d.toLocaleDateString('pl-PL', { weekday:'short' })})`;
+const plural = (n, [one, few, many]) => n === 1 ? one : (n % 10 >= 2 && n % 10 <= 4 && (n % 100 < 12 || n % 100 > 14)) ? few : many;
 // Kolejność ukończenia: data (i godzina, gdyby była w dateObj), przy remisie ID, na końcu wewnętrzny uid.
 const byCompletion = (a, b) => a.dateObj - b.dateObj || a.id.localeCompare(b.id, 'pl', { numeric:true }) || a.uid.localeCompare(b.uid);
 const SEG_NAMES = ['Przed zmianą', 'Po zmianie'];
+
+// Konfiguracje zakładek: prefiks identyfikatorów elementów, jednostki i teksty. Wartość punktu zawsze w r.lt.
+const LT = {
+  p:'xmr', tab:'xmr', ui:xui, change:() => state.xmr, compute:() => computeXmr(),
+  unit:'dni', vName:'Lead Time', axis:{ x:'Lead Time (dni)', mr:'mR (dni)' }, nouns:['zgłoszenie', 'zgłoszenia', 'zgłoszeń'],
+  thN:'Liczba zgłoszeń', thX:'Średni Lead Time X̄ (dni)', pointLegend:'Zgłoszenie', empty:'Brak zgłoszeń dla wybranych filtrów',
+  noData:'Brak aktywnych zgłoszeń dla wybranych rozmiarów i dat.', showIds:true,
+  name:r => r.id,
+  xLabel:o => `${o.r.id}, ${o.r.size}, ${fmtDate(o.r.dateObj)}, ${o.r.lt} dni`,
+  xTitle:o => `${o.r.id} · ${fmtDate(o.r.dateObj)} · ${o.r.size} · ${o.r.lt} dni`,
+  mrLabel:p => `mR ${p.a.r.id} → ${p.b.r.id}: ${p.v} dni`,
+  mrTitle:p => `${p.a.r.id} → ${p.b.r.id}: |${p.b.r.lt} − ${p.a.r.lt}| = ${p.v} dni`,
+  pairTxt:(r) => `${esc(r.id)} (${r.lt} dni, ${fmtDate(r.dateObj)})`,
+  xDetails:(o, d) => `<strong>Zgłoszenie ${esc(o.r.id)}</strong><dl style="margin-top:8px"><dt>Rozmiar</dt><dd>${o.r.size}</dd>
+        <dt>Data ukończenia</dt><dd>${fmtDate(o.r.dateObj)}</dd><dt>Lead Time</dt><dd>${o.r.lt} dni</dd>
+        <dt>Pozycja</dt><dd>${o.i + 1} z ${d.pts.length}</dd>`,
+  mrDetails:p => `<strong>Ruchomy rozstęp ${esc(p.a.r.id)} → ${esc(p.b.r.id)}</strong><dl style="margin-top:8px">
+        <dt>${esc(p.a.r.id)}</dt><dd>${p.a.r.lt} dni (${fmtDate(p.a.r.dateObj)})</dd>
+        <dt>${esc(p.b.r.id)}</dt><dd>${p.b.r.lt} dni (${fmtDate(p.b.r.dateObj)})</dd>`,
+  detailsNote:'Punkty pozostają w obliczeniach zgodnie z bieżącym statusem. Aby pominąć zgłoszenie, użyj „Wyklucz z analizy” w zakładce Lead Time.',
+};
+const TP = {
+  p:'tp', tab:'tp', ui:tui, change:() => state.tp, compute:() => computeTp(),
+  unit:'szt.', vName:'Przepustowość', axis:{ x:'Przepustowość (szt./dzień)', mr:'mR (szt.)' }, nouns:['dzień', 'dni', 'dni'],
+  thN:'Liczba dni', thX:'Średnia przepustowość X̄ (szt./dzień)', pointLegend:'Dzień', empty:'Brak dni dla wybranych filtrów',
+  noData:'Brak danych przepustowości dla wybranych dat.', showIds:false,
+  name:r => fmtDate(r.dateObj),
+  xLabel:o => `${fmtDay(o.r.dateObj)}, ${o.r.lt} szt.`,
+  xTitle:o => `${fmtDay(o.r.dateObj)} · ${o.r.lt} szt.`,
+  mrLabel:p => `mR ${fmtDate(p.a.r.dateObj)} → ${fmtDate(p.b.r.dateObj)}: ${p.v} szt.`,
+  mrTitle:p => `${fmtDate(p.a.r.dateObj)} → ${fmtDate(p.b.r.dateObj)}: |${p.b.r.lt} − ${p.a.r.lt}| = ${p.v} szt.`,
+  pairTxt:(r) => `${fmtDay(r.dateObj)} (${r.lt} szt.)`,
+  xDetails:(o, d) => `<strong>Dzień ${fmtDay(o.r.dateObj)}</strong><dl style="margin-top:8px">
+        <dt>Przepustowość</dt><dd>${o.r.lt} szt.</dd><dt>Pozycja</dt><dd>${o.i + 1} z ${d.pts.length}</dd>`,
+  mrDetails:p => `<strong>Ruchomy rozstęp ${fmtDate(p.a.r.dateObj)} → ${fmtDate(p.b.r.dateObj)}</strong><dl style="margin-top:8px">
+        <dt>${fmtDay(p.a.r.dateObj)}</dt><dd>${p.a.r.lt} szt.</dd>
+        <dt>${fmtDay(p.b.r.dateObj)}</dt><dd>${p.b.r.lt} szt.</dd>`,
+  detailsNote:'Wszystkie dni z wybranego zakresu pozostają w obliczeniach – oznaczenie i notatka nie zmieniają wyników.',
+};
+const CFGS = { xmr:LT, tp:TP };
+const last = { xmr:null, tp:null };
+const el = (cfg, name) => $(`${cfg.p}-${name}`);
 
 function dateSpan(list) {
   if (!list.length) return '';
@@ -1025,7 +1142,7 @@ function dateSpan(list) {
   return +a === +b ? fmtDate(a) : `${fmtDate(a)} – ${fmtDate(b)}`;
 }
 
-function segStats(items, seg) {
+function segStats(items, seg, cfg) {
   const n = items.length;
   const mrs = items.slice(1).map((b, k) => {
     const a = items[k];
@@ -1038,8 +1155,8 @@ function segStats(items, seg) {
     unpl: lim ? mean + XMR.E2 * mrBar : null, lnpl: lim ? mean - XMR.E2 * mrBar : null, url: lim ? XMR.D4 * mrBar : null, signals:[] };
   if (!lim) return st;
   st.signals = [
-    ...detectSignals(items.map(o => ({ pos:o.i, v:o.r.lt, o, id:o.r.uid })), 'x', seg, mean, st.unpl, st.lnpl),
-    ...detectSignals(mrs.map(p => ({ pos:p.b.i, v:p.v, p, id:p.b.r.uid })), 'mr', seg, mrBar, st.url, 0),
+    ...detectSignals(items.map(o => ({ pos:o.i, v:o.r.lt, o, id:o.r.uid })), 'x', seg, mean, st.unpl, st.lnpl, cfg),
+    ...detectSignals(mrs.map(p => ({ pos:p.b.i, v:p.v, p, id:p.b.r.uid })), 'mr', seg, mrBar, st.url, 0, cfg),
   ];
   return st;
 }
@@ -1055,9 +1172,9 @@ const RULE_IDS = ['r1', 'r2', 'r3', 'r4'];
 const PURPLE_MSG = 'Sprawdź, czy zmienił się proces i czy warto zaktualizować prognozę.';
 
 // units: [{pos, v, o|p, id}] w kolejności; C – linia centralna, G – górna granica, D – dolna granica (dla mR D = 0).
-function detectSignals(units, chart, seg, C, G, D) {
-  const out = [], isX = chart === 'x';
-  const cName = isX ? 'X̄' : 'mR̄', vName = isX ? 'Lead Time' : 'mR';
+function detectSignals(units, chart, seg, C, G, D, cfg = LT) {
+  const out = [], isX = chart === 'x', U = cfg.unit;
+  const cName = isX ? 'X̄' : 'mR̄', vName = isX ? cfg.vName : 'mR';
   const sideTxt = s => s > 0 ? 'powyżej linii centralnej' : 'poniżej linii centralnej';
   const mk = (rule, side, span, hits, extra) => {
     const k = side > 0 ? 'u' : 'd';
@@ -1067,8 +1184,8 @@ function detectSignals(units, chart, seg, C, G, D) {
     out.push({ key, rule, chart, seg, side, sideTxt:sideTxt(side), span, hits, C, G, D, ...extra });
   };
   units.forEach(u => {
-    if (u.v > G) mk('r1', 1, [u], [u], { label:`${vName} ${u.v} dni > ${isX ? 'UNPL' : 'URL'} ${f1(G)} dni` });
-    else if (u.v < D) mk('r1', -1, [u], [u], { label:`${vName} ${u.v} dni < LNPL ${f1(D)} dni` });
+    if (u.v > G) mk('r1', 1, [u], [u], { label:`${vName} ${u.v} ${U} > ${isX ? 'UNPL' : 'URL'} ${f1(G)} ${U}` });
+    else if (u.v < D) mk('r1', -1, [u], [u], { label:`${vName} ${u.v} ${U} < LNPL ${f1(D)} ${U}` });
   });
   [['r2', 3, 2, 2 / 3, '2/3'], ['r3', 5, 3, 1 / 3, '1/3']].forEach(([rule, w, k, f, fTxt]) => {
     [1, -1].forEach(side => {
@@ -1079,7 +1196,7 @@ function detectSignals(units, chart, seg, C, G, D) {
         if (!cur) return;
         const hits = [...cur.hits].sort((a, b) => a.pos - b.pos);
         mk(rule, side, units.slice(cur.start, cur.end + 1), hits, { thr, window:w,
-          label:`${hits.length} pkt ${side > 0 ? 'powyżej' : 'poniżej'} progu ${fTxt} (${vName} ${side > 0 ? '>' : '<'} ${f1(thr)} dni) w oknach ${w} kolejnych punktów` });
+          label:`${hits.length} pkt ${side > 0 ? 'powyżej' : 'poniżej'} progu ${fTxt} (${vName} ${side > 0 ? '>' : '<'} ${f1(thr)} ${U}) w oknach ${w} kolejnych punktów` });
         cur = null;
       };
       for (let s = 0; s + w <= units.length; s++) {
@@ -1093,7 +1210,7 @@ function detectSignals(units, chart, seg, C, G, D) {
   });
   let run = [], side = 0;
   const flushRun = () => {
-    if (run.length >= XMR.RUN) mk('r4', side, run, run, { label:`Seria ${run.length} kolejnych punktów ${side > 0 ? 'powyżej' : 'poniżej'} linii centralnej (${cName} ${f1(C)} dni)` });
+    if (run.length >= XMR.RUN) mk('r4', side, run, run, { label:`Seria ${run.length} kolejnych punktów ${side > 0 ? 'powyżej' : 'poniżej'} linii centralnej (${cName} ${f1(C)} ${U})` });
     run = []; side = 0;
   };
   units.forEach(u => {
@@ -1105,19 +1222,14 @@ function detectSignals(units, chart, seg, C, G, D) {
   return out;
 }
 
-function computeXmr() {
-  const from = parseISO(xui.from), to = parseISO(xui.to);
-  const d = { from, to, error:null, changeDate:null, crossing:null, ties:0 };
-  if (from && to && from > to) d.error = 'Data „od” musi być wcześniejsza lub równa dacie „do”.';
-  const pts = d.error ? [] : records
-    .filter(r => !r.excluded && xui.sizes.includes(r.size) && (!from || r.dateObj >= from) && (!to || r.dateObj <= to))
-    .sort(byCompletion).map((r, i) => ({ r, i }));
-  const cs = state.xmr;
+// Wspólna część: podział na okresy przed/po zmianie, granice, sygnały i mapy reguł punktów.
+function finishXmr(d, pts, cfg) {
+  const cs = cfg.change();
   d.changeDate = cs.changeOn ? parseISO(cs.changeDate) : null;
   const groups = d.changeDate ? [pts.filter(o => o.r.dateObj < d.changeDate), pts.filter(o => o.r.dateObj >= d.changeDate)] : [pts];
-  d.segs = groups.map((items, s) => segStats(items, s));
+  d.segs = groups.map((items, s) => segStats(items, s, cfg));
   pts.forEach(o => { o.seg = d.changeDate && o.r.dateObj >= d.changeDate ? 1 : 0; });
-  if (d.changeDate && d.segs[0].n && d.segs[1].n) d.crossing = [d.segs[0].items[d.segs[0].n - 1], d.segs[1].items[0]];
+  d.crossing = d.changeDate && d.segs[0].n && d.segs[1].n ? [d.segs[0].items[d.segs[0].n - 1], d.segs[1].items[0]] : null;
   d.pts = pts;
   d.mrs = d.segs.flatMap(s => s.mrs);
   d.signals = d.segs.flatMap(s => s.signals).sort((a, b) => a.span[0].pos - b.span[0].pos
@@ -1129,7 +1241,40 @@ function computeXmr() {
     if (!m.has(k)) m.set(k, new Set());
     m.get(k).add(s.rule);
   }));
+  return d;
+}
+
+function dateFilter(ui) {
+  const from = parseISO(ui.from), to = parseISO(ui.to);
+  return { from, to, error: from && to && from > to ? 'Data „od” musi być wcześniejsza lub równa dacie „do”.' : null };
+}
+
+function computeXmr() {
+  const d = dateFilter(xui);
+  const pts = d.error ? [] : records
+    .filter(r => !r.excluded && xui.sizes.includes(r.size) && (!d.from || r.dateObj >= d.from) && (!d.to || r.dateObj <= d.to))
+    .sort(byCompletion).map((r, i) => ({ r, i }));
+  finishXmr(d, pts, LT);
   d.ties = pts.filter((o, k) => (k > 0 && +pts[k - 1].r.dateObj === +o.r.dateObj) || (k < pts.length - 1 && +pts[k + 1].r.dateObj === +o.r.dateObj)).length;
+  return d;
+}
+
+function computeTp() {
+  const d = dateFilter(tui);
+  const pts = d.error ? [] : tpSource
+    .filter(r => (!tui.weekdays || r.dateObj.getDay() % 6 !== 0) && (!d.from || r.dateObj >= d.from) && (!d.to || r.dateObj <= d.to))
+    .map((r, i) => ({ r, i }));
+  finishXmr(d, pts, TP);
+  // Brakujące dni kalendarzowe między kolejnymi wierszami (z pominięciem weekendów, gdy filtr jest włączony)
+  d.gaps = 0;
+  pts.forEach((o, k) => {
+    if (!k) return;
+    for (let t = new Date(pts[k - 1].r.dateObj); ; ) {
+      t.setDate(t.getDate() + 1);
+      if (+t >= +o.r.dateObj) break;
+      if (!tui.weekdays || t.getDay() % 6 !== 0) d.gaps++;
+    }
+  });
   return d;
 }
 
@@ -1139,9 +1284,8 @@ function niceScale(raw) {
   return { max:Math.ceil(raw / step) * step, step };
 }
 
-function highlightOf(d) {
+function highlightOf(d, sel) {
   const hl = { x:new Set(), mr:new Set(), band:null, guide:null };
-  const sel = xui.selected;
   if (!sel) return hl;
   if (sel.kind === 'x') { const o = d.pts.find(p => p.r.uid === sel.uid); if (o) { hl.x.add(o.i); hl.guide = o.i; } }
   if (sel.kind === 'mr') { const p = d.mrs.find(m => m.key === sel.key); if (p) { hl.mr.add(p.key); hl.x.add(p.a.i); hl.x.add(p.b.i); hl.guide = p.b.i; } }
@@ -1172,8 +1316,8 @@ function ruleIcon(k) {
   return `<svg width="18" height="18" viewBox="0 0 18 18" aria-hidden="true" style="vertical-align:middle;flex:none">${k === 'r4' ? m + '<circle cx="9" cy="9" r="4" fill="#5d4037"/>' : m}</svg>`;
 }
 
-function drawXmr(kind, d, hl) {
-  const svg = $(kind === 'x' ? 'xmr-x' : 'xmr-mr');
+function drawXmr(kind, d, hl, cfg) {
+  const svg = el(cfg, kind);
   const W = Math.max(300, Math.round(svg.parentElement.clientWidth - 40 || 900));
   const narrow = W < 600;
   const H = kind === 'x' ? (narrow ? 260 : 320) : (narrow ? 190 : 230);
@@ -1181,7 +1325,7 @@ function drawXmr(kind, d, hl) {
   svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
   const N = d.pts.length;
   if (!N) {
-    svg.innerHTML = `<text x="${W / 2}" y="${H / 2}" text-anchor="middle" font-size="15" fill="#8d6e63">Brak zgłoszeń dla wybranych filtrów</text>`;
+    svg.innerHTML = `<text x="${W / 2}" y="${H / 2}" text-anchor="middle" font-size="15" fill="#8d6e63">${cfg.empty}</text>`;
     return;
   }
   const pw = W - m.l - m.r, ph = H - m.t - m.b, slot = pw / N;
@@ -1204,7 +1348,7 @@ function drawXmr(kind, d, hl) {
     const xb = m.l + d.segs[0].n * slot;
     s += `<line x1="${xb}" x2="${xb}" y1="${m.t - (isX ? 14 : 0)}" y2="${m.t + ph}" stroke="#3e2723" stroke-width="2" stroke-dasharray="6 3"/>`;
     if (isX) {
-      const name = state.xmr.changeName.trim() || 'Zmiana procesu';
+      const name = cfg.change().changeName.trim() || 'Zmiana procesu';
       const txt = `${name.length > 40 ? name.slice(0, 39) + '…' : name} (${fmtShort(d.changeDate)})`;
       const anchor = xb > m.l + pw * .6 ? 'end' : 'start';
       s += `<text x="${xb + (anchor === 'end' ? -4 : 4)}" y="${m.t - 6}" text-anchor="${anchor}" font-size="${fs}" font-weight="600" fill="#3e2723">${esc(txt)}</text>`;
@@ -1242,29 +1386,29 @@ function drawXmr(kind, d, hl) {
   const every = Math.max(1, Math.ceil(N / Math.max(2, Math.floor(pw / (narrow ? 62 : 74)))));
   for (let i = 0; i < N; i += every)
     s += `<line x1="${xi(i)}" x2="${xi(i)}" y1="${m.t + ph}" y2="${m.t + ph + 4}" stroke="#8d6e63"/><text x="${xi(i)}" y="${m.t + ph + 16}" text-anchor="middle" font-size="${fs - 1}" fill="#6d4c41">${fmtShort(d.pts[i].r.dateObj)}</text>`;
-  s += `<text transform="translate(12 ${m.t + ph / 2}) rotate(-90)" text-anchor="middle" font-size="${fs}" fill="#3e2723">${isX ? 'Lead Time (dni)' : 'mR (dni)'}</text>`;
+  s += `<text transform="translate(12 ${m.t + ph / 2}) rotate(-90)" text-anchor="middle" font-size="${fs}" fill="#3e2723">${cfg.axis[kind]}</text>`;
 
   // Linie łączące i punkty
-  const r = narrow ? 4.5 : 5.5;
+  const r = narrow ? (N > 80 ? 3.5 : 4.5) : (N > 80 ? 4.5 : 5.5);
   if (isX) {
     d.segs.forEach(sg => { if (sg.n > 1) s += `<polyline points="${sg.items.map(o => `${xi(o.i)},${y(o.r.lt)}`).join(' ')}" fill="none" stroke="#a1887f" stroke-width="1.2" pointer-events="none"/>`; });
     d.pts.forEach(o => {
       const rules = d.xRules.get(o.i), cx = xi(o.i), cy = y(o.r.lt);
-      s += `<g class="pt" data-xpt="${esc(o.r.uid)}" tabindex="0" role="button" aria-label="${esc(`${o.r.id}, ${o.r.size}, ${fmtDate(o.r.dateObj)}, ${o.r.lt} dni${rulesTxt(rules)}`)}">`
+      s += `<g class="pt" data-xpt="${esc(o.r.uid)}" tabindex="0" role="button" aria-label="${esc(cfg.xLabel(o) + rulesTxt(rules))}">`
          + `<circle cx="${cx}" cy="${cy}" r="12" fill="transparent"/>`
          + pointMarker(cx, cy, r, rules, '#5d4037')
          + (hl.x.has(o.i) ? `<circle cx="${cx}" cy="${cy}" r="${r + 7}" fill="none" stroke="#000" stroke-width="2.5" pointer-events="none"/>` : '')
-         + `<title>${esc(`${o.r.id} · ${fmtDate(o.r.dateObj)} · ${o.r.size} · ${o.r.lt} dni${rulesTxt(rules)}`)}</title></g>`;
+         + `<title>${esc(cfg.xTitle(o) + rulesTxt(rules))}</title></g>`;
     });
   } else {
     d.segs.forEach(sg => { if (sg.mrs.length > 1) s += `<polyline points="${sg.mrs.map(p => `${xi(p.b.i)},${y(p.v)}`).join(' ')}" fill="none" stroke="#a1887f" stroke-width="1.2" pointer-events="none"/>`; });
     d.mrs.forEach(p => {
       const rules = d.mrRules.get(p.key), cx = xi(p.b.i), cy = y(p.v);
-      s += `<g class="pt" data-mpt="${esc(p.key)}" tabindex="0" role="button" aria-label="${esc(`mR ${p.a.r.id} → ${p.b.r.id}: ${p.v} dni${rulesTxt(rules)}`)}">`
+      s += `<g class="pt" data-mpt="${esc(p.key)}" tabindex="0" role="button" aria-label="${esc(cfg.mrLabel(p) + rulesTxt(rules))}">`
          + `<circle cx="${cx}" cy="${cy}" r="12" fill="transparent"/>`
          + pointMarker(cx, cy, r, rules, '#8d6e63')
          + (hl.mr.has(p.key) ? `<circle cx="${cx}" cy="${cy}" r="${r + 7}" fill="none" stroke="#000" stroke-width="2.5" pointer-events="none"/>` : '')
-         + `<title>${esc(`${p.a.r.id} → ${p.b.r.id}: |${p.b.r.lt} − ${p.a.r.lt}| = ${p.v} dni${rulesTxt(rules)}`)}</title></g>`;
+         + `<title>${esc(cfg.mrTitle(p) + rulesTxt(rules))}</title></g>`;
     });
   }
   svg.innerHTML = s;
@@ -1276,42 +1420,38 @@ function signalWhere(sg) {
   return +a === +b ? fmtDate(a) : `${fmtDate(a)} – ${fmtDate(b)}`;
 }
 const signalIds = sg => sg.hits.map(u => sg.chart === 'x' ? u.o.r.id : `${u.p.a.r.id} → ${u.p.b.r.id}`).join(', ');
+const signalMeta = (sg, cfg) => signalWhere(sg) + (cfg.showIds ? ` · ID: ${esc(signalIds(sg))}` : ` · ${sg.hits.length} ${plural(sg.hits.length, ['punkt', 'punkty', 'punktów'])}`);
 const chartName = sg => sg.chart === 'x' ? 'Wykres X' : 'Wykres mR';
 
-function signalBox(sg) {
+function signalBox(sg, cfg) {
   const note = state.notes[sg.key] || '', R = RULES[sg.rule];
   const pairs = sg.chart === 'mr'
-    ? `<ul style="margin:4px 0;padding-left:18px">${sg.hits.map(u => `<li>${esc(u.p.a.r.id)} (${u.p.a.r.lt} dni, ${fmtDate(u.p.a.r.dateObj)}) → ${esc(u.p.b.r.id)} (${u.p.b.r.lt} dni, ${fmtDate(u.p.b.r.dateObj)}): mR = ${u.p.v} dni</li>`).join('')}</ul>` : '';
+    ? `<ul style="margin:4px 0;padding-left:18px">${sg.hits.map(u => `<li>${cfg.pairTxt(u.p.a.r)} → ${cfg.pairTxt(u.p.b.r)}: mR = ${u.p.v} ${cfg.unit}</li>`).join('')}</ul>` : '';
   const span = sg.window ? `<div style="font-size:.8rem;color:var(--muted)">Zakres scalonych okien: ${dateSpan(sg.span.map(u => ({ r:u.o ? u.o.r : u.p.b.r })))} (${sg.span.length} pkt)</div>` : '';
   return `<div class="signal-box ${sg.rule}">
     <div>${ruleIcon(sg.rule)} <strong>${R.name}</strong> · ${chartName(sg)} · ${sg.sideTxt} <span class="badge todo">Do sprawdzenia</span></div>
     <div style="font-size:.85rem;margin-top:2px">${esc(sg.label)}</div>
-    <div style="margin:4px 0">${signalWhere(sg)} · ID: ${esc(signalIds(sg))}</div>${pairs}${span}
+    <div style="margin:4px 0">${signalMeta(sg, cfg)}</div>${pairs}${span}
     ${sg.rule === 'r4' ? `<p class="note warn" style="margin:6px 0">${PURPLE_MSG} Sama detekcja nie zmienia okresu prognozy ani percentyli.</p>` : ''}
     <label style="display:block">Notatka o zdarzeniu (opcjonalnie)
       <textarea data-note-key="${esc(sg.key)}" maxlength="300" placeholder="np. czekaliśmy na dostawcę">${esc(note)}</textarea></label>
   </div>`;
 }
 
-function renderXmrDetails(d) {
-  const box = $('xmr-details'), sel = xui.selected;
+function renderXmrDetails(d, cfg) {
+  const box = el(cfg, 'details'), sel = cfg.ui.selected;
   let html = '', sigs = [];
   const segTxt = o => d.changeDate ? `<dt>Okres</dt><dd>${SEG_NAMES[o.seg]}</dd>` : '';
   if (sel?.kind === 'x') {
     const o = d.pts.find(p => p.r.uid === sel.uid);
     if (o) {
-      html = `<strong>Zgłoszenie ${esc(o.r.id)}</strong><dl style="margin-top:8px"><dt>Rozmiar</dt><dd>${o.r.size}</dd>
-        <dt>Data ukończenia</dt><dd>${fmtDate(o.r.dateObj)}</dd><dt>Lead Time</dt><dd>${o.r.lt} dni</dd>
-        <dt>Pozycja</dt><dd>${o.i + 1} z ${d.pts.length}</dd>${segTxt(o)}</dl>`;
+      html = `${cfg.xDetails(o, d)}${segTxt(o)}</dl>`;
       sigs = d.signals.filter(s => s.chart === 'x' && s.hits.some(u => u.o === o));
     }
   } else if (sel?.kind === 'mr') {
     const p = d.mrs.find(x => x.key === sel.key);
     if (p) {
-      html = `<strong>Ruchomy rozstęp ${esc(p.a.r.id)} → ${esc(p.b.r.id)}</strong><dl style="margin-top:8px">
-        <dt>${esc(p.a.r.id)}</dt><dd>${p.a.r.lt} dni (${fmtDate(p.a.r.dateObj)})</dd>
-        <dt>${esc(p.b.r.id)}</dt><dd>${p.b.r.lt} dni (${fmtDate(p.b.r.dateObj)})</dd>
-        <dt>mR</dt><dd>|${p.b.r.lt} − ${p.a.r.lt}| = <strong>${p.v} dni</strong></dd>${segTxt(p.b)}</dl>`;
+      html = `${cfg.mrDetails(p)}<dt>mR</dt><dd>|${p.b.r.lt} − ${p.a.r.lt}| = <strong>${p.v} ${cfg.unit}</strong></dd>${segTxt(p.b)}</dl>`;
       sigs = d.signals.filter(s => s.chart === 'mr' && s.hits.some(u => u.p === p));
     }
   } else if (sel?.kind === 'sig') {
@@ -1322,162 +1462,206 @@ function renderXmrDetails(d) {
     sigs.sort((a, b) => RULE_IDS.indexOf(a.rule) - RULE_IDS.indexOf(b.rule));
     html += `<p style="margin:8px 0 0;font-size:.9rem">Ten punkt należy do ${sigs.length} zdarzeń: ${sigs.map(s => RULES[s.rule].name).join(', ')}.</p>`;
   }
-  if (!html) { if (sel) xui.selected = null; box.hidden = true; box.innerHTML = ''; return; }
+  if (!html) { if (sel) cfg.ui.selected = null; box.hidden = true; box.innerHTML = ''; return; }
   box.hidden = false;
   box.innerHTML = `<div class="row-between"><span></span><button type="button" class="secondary" data-xclose>Zamknij ✕</button></div>${html}`
-    + sigs.map(signalBox).join('')
-    + (sigs.length ? '<p style="font-size:.8rem;color:var(--muted);margin:8px 0 0">Punkty pozostają w obliczeniach zgodnie z bieżącym statusem. Aby pominąć zgłoszenie, użyj „Wyklucz z analizy” w zakładce Lead Time.</p>' : '');
+    + sigs.map(s => signalBox(s, cfg)).join('')
+    + (sigs.length ? `<p style="font-size:.8rem;color:var(--muted);margin:8px 0 0">${cfg.detailsNote}</p>` : '');
 }
 
-function renderXmrSignals(d) {
-  $('xmr-signal-count').textContent = d.signals.length;
-  const selKey = xui.selected?.kind === 'sig' ? xui.selected.key : null;
+function renderXmrSignals(d, cfg) {
+  el(cfg, 'signal-count').textContent = d.signals.length;
+  const selKey = cfg.ui.selected?.kind === 'sig' ? cfg.ui.selected.key : null;
   const anyLim = d.segs.some(s => s.lim);
   const cnt = (k, c) => anyLim ? d.signals.filter(s => s.rule === k && s.chart === c).length : '–';
-  $('xmr-sig-legend').innerHTML = RULE_IDS.map(k => `<div class="sig-item ${k}">${ruleIcon(k)}<div><strong>${RULES[k].name}</strong>
+  el(cfg, 'sig-legend').innerHTML = RULE_IDS.map(k => `<div class="sig-item ${k}">${ruleIcon(k)}<div><strong>${RULES[k].name}</strong>
       <div class="meta">${RULES[k].rule}</div></div><span class="sig-count" title="Liczba zdarzeń na wykresie X / mR">X ${cnt(k, 'x')} / mR ${cnt(k, 'mr')}</span></div>`).join('');
   const missing = d.pts.length ? d.segs.filter(s => !s.lim) : [];
-  $('xmr-sig-missing').innerHTML = missing.map(s => `<p class="note warn">${d.changeDate ? `Okres „${SEG_NAMES[s.seg]}”: ` : ''}Za mało danych do oceny sygnałów.</p>`).join('');
-  $('xmr-signals').innerHTML = d.signals.map(s => `<li><button type="button" data-xsig="${esc(s.key)}" class="${s.rule}${s.key === selKey ? ' active' : ''}">
+  el(cfg, 'sig-missing').innerHTML = missing.map(s => `<p class="note warn">${d.changeDate ? `Okres „${SEG_NAMES[s.seg]}”: ` : ''}Za mało danych do oceny sygnałów.</p>`).join('');
+  el(cfg, 'signals').innerHTML = d.signals.map(s => `<li><button type="button" data-xsig="${esc(s.key)}" class="${s.rule}${s.key === selKey ? ' active' : ''}">
       <span>${ruleIcon(s.rule)} <strong>${RULES[s.rule].name}</strong> · ${chartName(s)} · ${s.sideTxt} <span class="badge todo">Do sprawdzenia</span>${state.notes[s.key] ? ' 📝' : ''}</span>
       <span style="font-size:.85rem">${esc(s.label)}</span>
       ${s.rule === 'r4' ? `<span style="font-size:.85rem;color:${RULES.r4.color};font-weight:600">${PURPLE_MSG}</span>` : ''}
-      <span class="meta">${d.changeDate ? SEG_NAMES[s.seg] + ' · ' : ''}${signalWhere(s)} · ID: ${esc(signalIds(s))}</span></button></li>`).join('')
+      <span class="meta">${d.changeDate ? SEG_NAMES[s.seg] + ' · ' : ''}${signalMeta(s, cfg)}</span></button></li>`).join('')
     || (anyLim ? '<li style="color:var(--muted);font-size:.9rem">Brak sygnałów – żadna z czterech reguł nie jest spełniona na wykresie X ani mR.</li>' : '');
 }
 
-function renderXmrTable(d) {
-  const two = !!d.changeDate;
-  $('xmr-table-title').textContent = two ? 'Przed / Po zmianie' : 'Granice procesu';
+function renderXmrTable(d, cfg) {
+  const two = !!d.changeDate, U = cfg.unit;
+  el(cfg, 'table-title').textContent = two ? 'Przed / Po zmianie' : 'Granice procesu';
   const lnpl = sg => sg.lim ? `${f1(sg.lnpl)}${sg.lnpl < 0 ? ' <span class="badge">poza skalą</span>' : ''}` : '–';
-  const row = (name, sg) => `<tr><td>${name}${sg.prelim ? ' <span class="badge">wstępne</span>' : ''}<div class="meta" style="font-size:.75rem;color:var(--muted)">${dateSpan(sg.items) || 'brak zgłoszeń'}</div></td>
+  const row = (name, sg) => `<tr><td>${name}${sg.prelim ? ' <span class="badge">wstępne</span>' : ''}<div class="meta" style="font-size:.75rem;color:var(--muted)">${dateSpan(sg.items) || 'brak danych'}</div></td>
     <td class="num">${sg.n}</td><td class="num">${f1(sg.mean)}</td><td class="num">${f1(sg.mrBar)}</td><td class="num">${sg.lim ? f1(sg.unpl) : '–'}</td>
     <td class="num">${lnpl(sg)}</td><td class="num">${sg.lim ? f1(sg.url) : '–'}</td></tr>`;
   const diff = (a, b) => a == null || b == null ? '–' : (b - a > 0 ? '+' : '') + f1(b - a);
-  let body = two ? row(SEG_NAMES[0], d.segs[0]) + row(SEG_NAMES[1], d.segs[1]) : row(state.xmr.changeOn ? 'Cała próba' : 'Próba', d.segs[0]);
+  let body = two ? row(SEG_NAMES[0], d.segs[0]) + row(SEG_NAMES[1], d.segs[1]) : row(cfg.change().changeOn ? 'Cała próba' : 'Próba', d.segs[0]);
   if (two) {
     const [a, b] = d.segs;
     body += `<tr style="font-weight:600"><td>Różnica (Po − Przed)</td><td class="num">${b.n - a.n > 0 ? '+' : ''}${b.n - a.n}</td>
       <td class="num">${diff(a.mean, b.mean)}</td><td class="num">${diff(a.mrBar, b.mrBar)}</td><td class="num">${diff(a.unpl, b.unpl)}</td><td></td><td></td></tr>`;
   }
-  $('xmr-table').innerHTML = `<thead><tr><th>Okres</th><th class="num">Liczba zgłoszeń</th><th class="num">Średni Lead Time X̄ (dni)</th><th class="num">Średni mR̄ (dni)</th>
-    <th class="num">UNPL (dni)</th><th class="num">LNPL (dni)</th><th class="num">URL (dni)</th></tr></thead><tbody>${body}</tbody>`;
+  el(cfg, 'table').innerHTML = `<thead><tr><th>Okres</th><th class="num">${cfg.thN}</th><th class="num">${cfg.thX}</th><th class="num">Średni mR̄ (${U})</th>
+    <th class="num">UNPL (${U})</th><th class="num">LNPL (${U})</th><th class="num">URL (${U})</th></tr></thead><tbody>${body}</tbody>`;
   const notes = [];
   if (two) {
     const [a, b] = d.segs;
     if (a.n !== b.n) notes.push(`Okresy mają różną liczebność (${a.n} przed, ${b.n} po) – mniejszy okres daje mniej pewne granice.`);
-    if (d.crossing) notes.push(`Para ${esc(d.crossing[0].r.id)} → ${esc(d.crossing[1].r.id)} przecina datę zmiany i jest pominięta w mR.`);
+    if (d.crossing) notes.push(`Para ${esc(cfg.name(d.crossing[0].r))} → ${esc(cfg.name(d.crossing[1].r))} przecina datę zmiany i jest pominięta w mR.`);
     notes.push('To porównanie obserwacji: różnica między okresami nie dowodzi sama w sobie, że spowodowała ją zmiana procesu.');
   }
-  if (d.segs.some(s => s.prelim)) notes.push(`* Granice wstępne – mniej niż ${SMALL_SAMPLE} zgłoszeń w okresie.`);
+  if (d.segs.some(s => s.prelim)) notes.push(`* Granice wstępne – mniej niż ${SMALL_SAMPLE} ${cfg.nouns[2]} w okresie.`);
   notes.push('Wzory: UNPL/LNPL = X̄ ± 2,66 × mR̄, URL = 3,267 × mR̄, LRL = 0.');
-  $('xmr-table-note').innerHTML = notes.map(t => `<p style="margin:4px 0;font-size:.85rem">${t}</p>`).join('');
+  el(cfg, 'table-note').innerHTML = notes.map(t => `<p style="margin:4px 0;font-size:.85rem">${t}</p>`).join('');
 }
 
-function renderXmr() {
-  if ($('tab-xmr').hidden) return;
-  $('xmr-change-box').hidden = !state.xmr.changeOn;
-  const d = xmrLast = computeXmr();
+function renderXmrTab(cfg) {
+  if ($('tab-' + cfg.tab).hidden) return;
+  el(cfg, 'change-box').hidden = !cfg.change().changeOn;
+  const d = last[cfg.p] = cfg.compute();
   const N = d.pts.length;
-  $('xmr-sample').innerHTML = N
-    ? `Próba: <strong>n = ${N}</strong> ${N === 1 ? 'zgłoszenie' : (N % 10 >= 2 && N % 10 <= 4 && (N % 100 < 12 || N % 100 > 14)) ? 'zgłoszenia' : 'zgłoszeń'} · ${d.mrs.length} wartości mR · faktyczny zakres dat: <strong>${dateSpan(d.pts)}</strong>`
+  el(cfg, 'sample').innerHTML = N
+    ? `Próba: <strong>n = ${N}</strong> ${plural(N, cfg.nouns)} · ${d.mrs.length} wartości mR · faktyczny zakres dat: <strong>${dateSpan(d.pts)}</strong>`
     : 'Próba: <strong>n = 0</strong>';
 
   const notes = [];
   if (d.error) notes.push(['empty', d.error]);
-  else if (!N) notes.push(['empty', 'Brak aktywnych zgłoszeń dla wybranych rozmiarów i dat.']);
+  else if (!N) notes.push(['empty', cfg.noData]);
   else {
-    if (state.xmr.changeOn && !d.changeDate) notes.push(['warn', 'Wskaż datę zmiany, aby porównać okres przed i po zmianie.']);
+    if (cfg.change().changeOn && !d.changeDate) notes.push(['warn', 'Wskaż datę zmiany, aby porównać okres przed i po zmianie.']);
     d.segs.forEach(sg => {
       const who = d.changeDate ? `Okres „${SEG_NAMES[sg.seg]}”` : 'Próba';
-      if (!sg.n) notes.push(['warn', `${who} nie zawiera zgłoszeń – brak danych do wyznaczenia granic.`]);
-      else if (!sg.lim) notes.push(['empty', `${who}: tylko ${sg.n} zgłoszenie – brak danych do wyznaczenia granic (potrzebne co najmniej 2). Pokazuję dostępne obserwacje.`]);
-      else if (sg.prelim) notes.push(['warn', `${who}: granice wstępne (n = ${sg.n}) – przy mniej niż ${SMALL_SAMPLE} zgłoszeniach mogą się jeszcze wyraźnie zmienić.`]);
+      if (!sg.n) notes.push(['warn', `${who} nie zawiera danych – brak danych do wyznaczenia granic.`]);
+      else if (!sg.lim) notes.push(['empty', `${who}: tylko ${sg.n} ${plural(sg.n, cfg.nouns)} – brak danych do wyznaczenia granic (potrzebne co najmniej 2). Pokazuję dostępne obserwacje.`]);
+      else if (sg.prelim) notes.push(['warn', `${who}: granice wstępne (n = ${sg.n}) – przy mniej niż ${SMALL_SAMPLE} ${cfg.nouns[2]} mogą się jeszcze wyraźnie zmienić.`]);
     });
   }
-  $('xmr-notes').innerHTML = notes.map(([c, t]) => `<p class="note ${c}">${esc(t)}</p>`).join('');
-  $('xmr-ties').textContent = d.ties ? `W bieżącej próbie ${d.ties} zgłoszeń dzieli datę ukończenia z innym zgłoszeniem.` : 'W bieżącej próbie żadne zgłoszenia nie dzielą daty ukończenia.';
+  if (cfg === LT) $('xmr-ties').textContent = d.ties ? `W bieżącej próbie ${d.ties} zgłoszeń dzieli datę ukończenia z innym zgłoszeniem.` : 'W bieżącej próbie żadne zgłoszenia nie dzielą daty ukończenia.';
+  if (cfg === TP) {
+    if (tpError) notes.unshift(['empty', tpError]);
+    if (tpDupes) notes.push(['warn', `W pliku ${tpDupes} ${plural(tpDupes, ['data występuje', 'daty występują', 'dat występuje'])} więcej niż raz – wartości z tego samego dnia zostały zsumowane.`]);
+    if (N && d.gaps) notes.push(['warn', `W wybranym zakresie brakuje ${d.gaps} ${plural(d.gaps, ['dnia', 'dni', 'dni'])} w pliku – kolejne punkty nie zawsze są sąsiednimi dniami.`]);
+  }
+  el(cfg, 'notes').innerHTML = notes.map(([c, t]) => `<p class="note ${c}">${esc(t)}</p>`).join('');
 
-  $('xmr-legend').innerHTML = `<span><span class="dot" style="background:#5d4037"></span> Zgłoszenie</span>
+  el(cfg, 'legend').innerHTML = `<span><span class="dot" style="background:#5d4037"></span> ${cfg.pointLegend}</span>
     <span><span class="line" style="border-top-style:solid;border-color:#3e2723"></span> Linia centralna</span>
     <span><span class="line" style="border-color:#c62828"></span> Granice procesu</span>
     ${d.changeDate ? '<span><span class="line" style="border-color:#3e2723;width:4px;height:14px;border-top:none;border-left:2px dashed #3e2723"></span> Zmiana procesu</span>' : ''}`;
 
-  const hl = highlightOf(d);
-  drawXmr('x', d, hl);
-  drawXmr('mr', d, hl);
-  renderXmrDetails(d);
-  renderXmrSignals(d);
-  renderXmrTable(d);
+  const hl = highlightOf(d, cfg.ui.selected);
+  drawXmr('x', d, hl, cfg);
+  drawXmr('mr', d, hl, cfg);
+  renderXmrDetails(d, cfg);
+  renderXmrSignals(d, cfg);
+  renderXmrTable(d, cfg);
 }
+const renderXmr = () => renderXmrTab(LT);
+const renderTp = () => renderXmrTab(TP);
 
+const TAB_HASH = { xmr:'#przewidywalnosc', tp:'#tempo' };
 function showTab(t) {
-  const isX = t === 'xmr';
-  $('tab-lead').hidden = isX; $('tab-xmr').hidden = !isX;
+  ['lead', 'xmr', 'tp'].forEach(k => { $('tab-' + k).hidden = k !== t; });
   document.querySelectorAll('.tab').forEach(b => b.setAttribute('aria-selected', String(b.dataset.tab === t)));
-  history.replaceState(null, '', isX ? '#przewidywalnosc' : location.pathname + location.search);
-  if (isX) renderXmr();
+  history.replaceState(null, '', TAB_HASH[t] || location.pathname + location.search);
+  if (t === 'xmr') renderXmr();
+  if (t === 'tp') renderTp();
 }
 document.querySelectorAll('.tab').forEach(b => b.addEventListener('click', () => showTab(b.dataset.tab)));
 
-document.querySelectorAll('.xmr-size').forEach(el => el.addEventListener('change', () => {
+document.querySelectorAll('.xmr-size').forEach(c => c.addEventListener('change', () => {
   xui.sizes = [...document.querySelectorAll('.xmr-size:checked')].map(c => c.value); renderXmr();
 }));
-$('xmr-from').addEventListener('change', e => { xui.from = e.target.value; renderXmr(); });
-$('xmr-to').addEventListener('change', e => { xui.to = e.target.value; renderXmr(); });
-$('xmr-clear-dates').addEventListener('click', () => { xui.from = xui.to = ''; $('xmr-from').value = $('xmr-to').value = ''; renderXmr(); });
-$('xmr-change-on').addEventListener('change', e => { state.xmr.changeOn = e.target.checked; saveState(); renderXmr(); });
-$('xmr-change-date').addEventListener('change', e => { state.xmr.changeDate = normalizeDate(e.target.value) || ''; saveState(); renderXmr(); });
-$('xmr-change-name').addEventListener('change', e => { state.xmr.changeName = e.target.value.trim().slice(0, 80); saveState(); renderXmr(); });
+$('tp-weekdays').addEventListener('change', e => { tui.weekdays = e.target.checked; renderTp(); });
 
-function xmrSelect(sel, scroll) {
-  const same = xui.selected && sel && xui.selected.kind === sel.kind && (xui.selected.uid || xui.selected.key) === (sel.uid || sel.key);
-  xui.selected = same ? null : sel;
-  renderXmr();
-  if (xui.selected && scroll) $(scroll).scrollIntoView({ block:'nearest', behavior:'smooth' });
+function xmrSelect(cfg, sel, scroll) {
+  const ui = cfg.ui;
+  const same = ui.selected && sel && ui.selected.kind === sel.kind && (ui.selected.uid || ui.selected.key) === (sel.uid || sel.key);
+  ui.selected = same ? null : sel;
+  renderXmrTab(cfg);
+  if (ui.selected && scroll) el(cfg, scroll).scrollIntoView({ block:'nearest', behavior:'smooth' });
 }
 function xmrPointFromEvent(e) {
   const g = e.target.closest('[data-xpt],[data-mpt]');
   if (!g) return null;
   return g.dataset.xpt ? { kind:'x', uid:g.dataset.xpt } : { kind:'mr', key:g.dataset.mpt };
 }
-['xmr-x', 'xmr-mr'].forEach(id => {
-  $(id).addEventListener('click', e => { const s = xmrPointFromEvent(e); if (s) xmrSelect(s, 'xmr-details'); });
-  $(id).addEventListener('keydown', e => {
-    const s = xmrPointFromEvent(e);
-    if (s && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); xmrSelect(s, 'xmr-details'); }
+[LT, TP].forEach(cfg => {
+  const render = () => renderXmrTab(cfg);
+  el(cfg, 'from').addEventListener('change', e => { cfg.ui.from = e.target.value; render(); });
+  el(cfg, 'to').addEventListener('change', e => { cfg.ui.to = e.target.value; render(); });
+  el(cfg, 'clear-dates').addEventListener('click', () => { cfg.ui.from = cfg.ui.to = ''; el(cfg, 'from').value = el(cfg, 'to').value = ''; render(); });
+  el(cfg, 'change-on').addEventListener('change', e => { cfg.change().changeOn = e.target.checked; saveState(); render(); });
+  el(cfg, 'change-date').addEventListener('change', e => { cfg.change().changeDate = normalizeDate(e.target.value) || ''; saveState(); render(); });
+  el(cfg, 'change-name').addEventListener('change', e => { cfg.change().changeName = e.target.value.trim().slice(0, 80); saveState(); render(); });
+  ['x', 'mr'].forEach(k => {
+    el(cfg, k).addEventListener('click', e => { const s = xmrPointFromEvent(e); if (s) xmrSelect(cfg, s, 'details'); });
+    el(cfg, k).addEventListener('keydown', e => {
+      const s = xmrPointFromEvent(e);
+      if (s && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); xmrSelect(cfg, s, 'details'); }
+    });
+  });
+  el(cfg, 'signals').addEventListener('click', e => {
+    const b = e.target.closest('[data-xsig]');
+    if (b) xmrSelect(cfg, { kind:'sig', key:b.dataset.xsig }, 'x');
+  });
+  el(cfg, 'details').addEventListener('click', e => { if (e.target.closest('[data-xclose]')) { cfg.ui.selected = null; render(); } });
+  el(cfg, 'details').addEventListener('change', e => {
+    const key = e.target.dataset.noteKey;
+    if (!key) return;
+    const v = e.target.value.trim().slice(0, 300);
+    if (v) state.notes[key] = v; else delete state.notes[key];
+    saveState(); renderXmrSignals(last[cfg.p], cfg); toast('Zapisano notatkę do sygnału.');
   });
 });
-$('xmr-signals').addEventListener('click', e => {
-  const b = e.target.closest('[data-xsig]');
-  if (b) xmrSelect({ kind:'sig', key:b.dataset.xsig }, 'xmr-x');
-});
-$('xmr-details').addEventListener('click', e => { if (e.target.closest('[data-xclose]')) { xui.selected = null; renderXmr(); } });
-$('xmr-details').addEventListener('change', e => {
-  const key = e.target.dataset.noteKey;
-  if (!key) return;
-  const v = e.target.value.trim().slice(0, 300);
-  if (v) state.notes[key] = v; else delete state.notes[key];
-  saveState(); renderXmrSignals(xmrLast); toast('Zapisano notatkę do sygnału.');
-});
 let resizeTimer;
-window.addEventListener('resize', () => { clearTimeout(resizeTimer); resizeTimer = setTimeout(renderXmr, 150); });
+window.addEventListener('resize', () => { clearTimeout(resizeTimer); resizeTimer = setTimeout(() => { renderXmr(); renderTp(); }, 150); });
 
 function syncXmrInputs() {
-  $('xmr-change-on').checked = state.xmr.changeOn;
-  $('xmr-change-date').value = state.xmr.changeDate;
-  $('xmr-change-name').value = state.xmr.changeName;
+  [LT, TP].forEach(cfg => {
+    const c = cfg.change();
+    el(cfg, 'change-on').checked = c.changeOn;
+    el(cfg, 'change-date').value = c.changeDate;
+    el(cfg, 'change-name').value = c.changeName;
+  });
+}
+
+// ---------- Tempo dostarczania: dane z pliku Throughput Daily ----------
+let tpSource = [], tpError = null, tpDupes = 0;
+async function loadThroughput() {
+  const res = await fetch(TP_FILE, { cache:'no-cache' });
+  if (!res.ok) throw new Error('HTTP ' + res.status);
+  const [header = [], ...body] = await readXlsx(await res.arrayBuffer());
+  const norm = h => String(h ?? '').trim().toLowerCase();
+  const iD = header.findIndex(h => norm(h).startsWith('data') || norm(h).startsWith('date'));
+  const iV = header.findIndex(h => /^(przepustowość|throughput)/.test(norm(h)));
+  if (iD < 0 || iV < 0) throw new Error('Brak kolumn „Data” i „Przepustowość” w arkuszu');
+  const byDay = new Map();
+  let dupes = 0;
+  body.forEach(r => {
+    const d = typeof r[iD] === 'number' ? parseSourceDate(r[iD]) : parseISO(normalizeDate(r[iD]));
+    const v = Number(r[iV]);
+    if (!d || r[iV] == null || r[iV] === '' || !Number.isFinite(v)) return;
+    const iso = toISO(d);
+    if (byDay.has(iso)) { dupes++; byDay.get(iso).lt += v; }
+    else byDay.set(iso, { uid:'tp:' + iso, id:iso, size:'', date:iso, dateObj:d, lt:v });
+  });
+  tpDupes = dupes;
+  return [...byDay.values()].sort((a, b) => a.dateObj - b.dateObj);
 }
 
 // ---------- Start ----------
 loadState();
 syncXmrInputs();
-showTab(location.hash === '#przewidywalnosc' ? 'xmr' : 'lead');
+showTab(Object.keys(TAB_HASH).find(k => TAB_HASH[k] === location.hash) || 'lead');
 renderStorageNote();
 loadSource()
   .then(s => { source = s; })
   .catch(e => { $('error').textContent = 'Błąd wczytywania pliku źródłowego: ' + e.message + ' – pokazuję tylko dane zapisane w przeglądarce.'; console.error(e); })
   .finally(refresh);
+loadThroughput()
+  .then(s => { tpSource = s; tpError = null; })
+  .catch(e => { tpError = 'Błąd wczytywania pliku Throughput Daily.xlsx: ' + e.message; console.error(e); })
+  .finally(renderTp);
 </script>
 </body>
 </html>

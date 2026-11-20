@@ -105,6 +105,11 @@
   #toast { position:fixed; left:50%; bottom:24px; transform:translateX(-50%); background:#3e2723; color:#fff; padding:10px 18px; border-radius:8px; box-shadow:0 4px 12px rgba(0,0,0,.35); font-size:.9rem; opacity:0; pointer-events:none; transition:opacity .25s; z-index:10; }
   #toast.show { opacity:1; }
   footer { text-align:center; color:#d7ccc8; font-size:.8rem; padding:16px; }
+  .reward { display:flex; gap:20px; align-items:center; text-align:left; border-top:4px solid #f9a825; }
+  .reward svg { flex:none; width:96px; height:96px; }
+  .reward h2 { margin:0 0 6px; }
+  .reward .joke { background:#fff; border:1px dashed #d7ccc8; border-radius:8px; padding:10px 14px; margin-top:10px; font-size:.95rem; }
+  .reward .joke .meta { font-size:.75rem; color:var(--muted); margin-bottom:4px; text-transform:uppercase; letter-spacing:.04em; }
   @media (max-width:760px) { .two-col, .xmr-filters { grid-template-columns:1fr; } main { padding:12px; } .card { padding:14px; } }
 </style>
 </head>
@@ -392,6 +397,24 @@
       <div id="tp-table-note" style="margin-top:10px"></div>
     </section>
   </div>
+  <section class="card reward" id="reward" aria-labelledby="reward-title">
+    <svg viewBox="0 0 96 96" role="img" aria-label="Mini puchar">
+      <path d="M30 14h36v20a18 18 0 0 1-36 0z" fill="#f9a825" stroke="#a66f00" stroke-width="2"/>
+      <path d="M30 20H18a12 12 0 0 0 12 16M66 20h12a12 12 0 0 1-12 16" fill="none" stroke="#a66f00" stroke-width="3"/>
+      <path d="M38 18v14a10 10 0 0 0 6 9" fill="none" stroke="#fff3c4" stroke-width="3" stroke-linecap="round"/>
+      <rect x="44" y="51" width="8" height="12" fill="#e0a100" stroke="#a66f00" stroke-width="2"/>
+      <rect x="34" y="63" width="28" height="8" rx="2" fill="#f9a825" stroke="#a66f00" stroke-width="2"/>
+      <rect x="28" y="71" width="40" height="11" rx="2" fill="#5d4037"/>
+      <text x="48" y="80" text-anchor="middle" font-size="7" font-weight="700" fill="#ffcc80">MISTRZ</text>
+      <path d="M48 22l2.4 4.9 5.4.8-3.9 3.8.9 5.4-4.8-2.6-4.8 2.6.9-5.4-3.9-3.8 5.4-.8z" fill="#fff8e1"/>
+      <g fill="#f9a825"><circle cx="14" cy="12" r="2"/><circle cx="84" cy="10" r="2.5"/><circle cx="86" cy="50" r="1.8"/><circle cx="10" cy="54" r="1.8"/></g>
+    </svg>
+    <div style="flex:1">
+      <h2 id="reward-title">🎉 Gratulacje – dotarłeś do końca strony!</h2>
+      <p style="margin:0;font-size:.92rem">Wytrwałość godna stabilnego procesu: przewinąłeś wszystko bez ani jednego sygnału poza granicami. W nagrodę – mini puchar i żart dnia.</p>
+      <div class="joke"><div class="meta" id="joke-date">Żart dnia</div><div id="joke-text"></div></div>
+    </div>
+  </section>
 </main>
 <footer>Czas realizacji w dniach · percentyle metodą najbliższej rangi (nearest rank) · okres suwaka liczony wstecz od najpóźniejszej daty ukończenia dla wybranych rozmiarów</footer>
 <div id="toast" role="status" aria-live="polite"></div>
@@ -1770,6 +1793,29 @@ async function loadThroughput() {
   tpDupes = dupes;
   return [...byDay.values()].sort((a, b) => a.dateObj - b.dateObj);
 }
+
+// ---------- Nagroda na końcu strony: żart dnia (ten sam przez cały dzień) ----------
+const JOKES = [
+  'Dlaczego wykres XmR nigdy się nie stresuje? Bo wie, że większość tego, co się dzieje, to tylko szum.',
+  'Zespół zapytał Scrum Mastera, kiedy skończą. Odpowiedział: „Z 85% pewnością – zanim przestaniecie pytać”.',
+  'Limit WIP to jak dieta: wszyscy się zgadzają, dopóki nie pojawi się „tylko jedno małe zadanie”.',
+  'Mediana weszła do baru. Połowa klientów była od niej wyższa, połowa niższa – i nikt się nie obraził.',
+  'Programista mówi: „To zajmie dwa dni”. Wykres Lead Time mówi: „Widzimy się w P95”.',
+  'Dlaczego średnia nie lubi imprez? Bo jeden gość z partią 12 zadań zawsze psuje jej wizerunek.',
+  'Kanban to jedyna metoda, w której „skończone” znaczy więcej niż „zaczęte”. I to jest rewolucja.',
+  'Seria ośmiu punktów poniżej linii centralnej? To nie pech – to sygnał. Pech to brak kawy w kuchni.',
+  'Product Owner pyta: „Czy to da się zrobić szybciej?”. Throughput odpowiada: „Mogę zrobić tak, żeby wyglądało szybciej”.',
+  'Ile osób potrzeba, żeby wymienić żarówkę w zespole agile? Jedna, ale najpierw estymujemy w story pointach.',
+  'Dlaczego karta utknęła w kolumnie „Review”? Bo wszyscy myśleli, że ktoś inny już ją przegląda.',
+  'Shewhart patrzy na nasz proces i mówi: „Nie panikujcie, to tylko zmienność wspólnej przyczyny”. My: „A urlop całego zespołu?”.',
+  'Najszybsza droga do 100% wykorzystania zasobów? Zacząć wszystko i nic nie kończyć.',
+  'Retrospektywa: miejsce, gdzie wspólnie ustalamy, że w przyszłym sprincie na pewno będzie inaczej.',
+];
+(() => {
+  const now = new Date(), dayNo = Math.floor(Date.UTC(now.getFullYear(), now.getMonth(), now.getDate()) / 86400000);
+  $('joke-text').textContent = JOKES[dayNo % JOKES.length];
+  $('joke-date').textContent = `Żart dnia · ${fmtDate(now)}`;
+})();
 
 // ---------- Start ----------
 loadState();

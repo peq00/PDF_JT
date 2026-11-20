@@ -318,13 +318,17 @@
 
   <div id="tab-tp" role="tabpanel" aria-labelledby="tab-btn-tp" hidden>
     <section class="card">
-      <h2>Tempo dostarczania – wykresy XmR (Shewhart)</h2>
-      <p style="margin:0 0 12px;font-size:.9rem">Dzienna przepustowość (delivery rate) – liczba elementów ukończonych danego dnia · źródło: <a href="Throughput%20Daily.xlsx">Throughput Daily.xlsx</a></p>
+      <h2>Tempo dostarczania – wykresy XmR z median (Shewhart)</h2>
+      <p style="margin:0 0 12px;font-size:.9rem">Przepustowość (delivery rate) – liczba elementów ukończonych danego dnia lub tygodnia · źródło: <a href="Throughput%20Daily.xlsx">Throughput Daily.xlsx</a></p>
       <div class="xmr-filters">
         <div>
-          <strong>Dni</strong>
+          <strong>Prezentacja</strong>
           <div class="group" style="margin-top:8px">
-            <label><input type="checkbox" id="tp-weekdays"> Tylko dni robocze (pn–pt)</label>
+            <label><input type="radio" name="tp-period" value="day" checked> Dni</label>
+            <label><input type="radio" name="tp-period" value="week"> Tygodnie (suma pn–pt)</label>
+          </div>
+          <div class="group" style="margin-top:6px">
+            <label id="tp-weekdays-label"><input type="checkbox" id="tp-weekdays"> Tylko dni robocze (pn–pt)</label>
           </div>
         </div>
         <div>
@@ -348,10 +352,12 @@
     <div id="tp-notes"></div>
     <details class="help">
       <summary>Jak czytać wykresy XmR tempa dostarczania?</summary>
-      <p><strong>Wykres X</strong> pokazuje przepustowość (liczbę ukończonych elementów) kolejnych dni z pliku, w kolejności dat. Linia ciągła to średnia X̄ (średnie tempo dostarczania na dzień), linie przerywane to naturalne granice procesu: UNPL = X̄ + 2,66 × mR̄ oraz LNPL = X̄ − 2,66 × mR̄. Skala zaczyna się od 0 – ujemna LNPL wypada poza skalą (jej wartość z wzoru jest w tabeli granic).</p>
-      <p><strong>Wykres mR</strong> pokazuje ruchomy rozstęp mRᵢ = |Xᵢ − Xᵢ₋₁| między kolejnymi dniami, przy drugim dniu z pary; pierwszy dzień nie ma punktu mR. URL = 3,267 × mR̄, LRL = 0.</p>
-      <p><strong>Rola granic procesu:</strong> opisują rutynową zmienność dziennego tempa, której można oczekiwać od obecnego sposobu pracy. Dni w granicach to zwykły „szum”. Granice nie są celem. Przy mniej niż 20 dniach są wstępne.</p>
-      <p><strong>Cztery rodzaje sygnałów</strong> – te same kryteria co w zakładce Przewidywalność, sprawdzane osobno na wykresie X i mR oraz w każdym okresie:</p>
+      <p><strong>Prezentacja:</strong> „Dni” – przepustowość każdego dnia z pliku. „Tygodnie” – suma ukończeń od poniedziałku do piątku w każdym tygodniu kalendarzowym (weekendy pominięte); tydzień, dla którego plik nie zawiera wszystkich 5 dni roboczych, jest oznaczony jako niepełny.</p>
+      <p><strong>Wykres X</strong> pokazuje przepustowość kolejnych dni lub tygodni. Linia ciągła to <strong>mediana X̃</strong> (typowe tempo dostarczania), linie przerywane to naturalne granice procesu liczone z median: UNPL = X̃ + 3,145 × mR̃ oraz LNPL = X̃ − 3,145 × mR̃. Skala zaczyna się od 0 – ujemna LNPL wypada poza skalą (jej wartość z wzoru jest w tabeli granic).</p>
+      <p><strong>Wykres mR</strong> pokazuje ruchomy rozstęp mRᵢ = |Xᵢ − Xᵢ₋₁| między kolejnymi punktami, przy drugim punkcie z pary. Linia centralna to <strong>mediana mR̃</strong>, URL = 3,865 × mR̃, LRL = 0.</p>
+      <p><strong>Dlaczego mediany?</strong> Przepustowość jest zwykle mocno skośna (wiele dni z 0–2 ukończeniami i pojedyncze dni z dużą partią). Mediany są odporne na takie skrajne wartości, więc nie zawyżają linii centralnej ani granic. Stałe 3,145 i 3,865 to odpowiedniki 2,66 i 3,267 dla median (Wheeler).</p>
+      <p><strong>Rola granic procesu:</strong> opisują rutynową zmienność tempa, której można oczekiwać od obecnego sposobu pracy. Punkty w granicach to zwykły „szum”. Granice nie są celem. Przy mniej niż 20 punktach są wstępne.</p>
+      <p><strong>Cztery rodzaje sygnałów</strong> – te same kryteria co w zakładce Przewidywalność, ale względem mediany i granic z median; sprawdzane osobno na wykresie X i mR oraz w każdym okresie:</p>
       <ul style="margin:4px 0 8px;padding-left:20px;font-size:.9rem">
         <li><strong style="color:#c62828">● Czerwony – silny sygnał:</strong> punkt powyżej górnej lub poniżej dolnej granicy.</li>
         <li><strong style="color:#ef6c00">◆ Pomarańczowy – umiarkowany:</strong> co najmniej 2 z 3 kolejnych punktów dalej niż 2/3 odległości do granicy, po tej samej stronie.</li>
@@ -359,18 +365,22 @@
         <li><strong style="color:#7b1fa2">◯ Fioletowy – do zmiany prognozy:</strong> co najmniej 8 kolejnych punktów po tej samej stronie linii centralnej; punkt na linii przerywa serię.</li>
       </ul>
       <p><strong>Dni bez dostaw:</strong> plik zawiera wszystkie dni kalendarzowe, także weekendy z wartością 0. Opcja „Tylko dni robocze” pomija soboty i niedziele – zmienia to X̄, mR̄ i granice, bo weekendowe zera zwiększają zmienność między kolejnymi dniami.</p>
-      <p><strong>Przed i po zmianie:</strong> dni sprzed daty zmiany tworzą pierwszy okres, od tej daty – drugi. Linie i granice liczone są osobno, a para dni przecinająca datę zmiany jest pomijana w mR. Porównanie to obserwacja: różnica nie dowodzi, że spowodowała ją zmiana.</p>
+      <p><strong>Przed i po zmianie:</strong> dni sprzed daty zmiany tworzą pierwszy okres, od tej daty – drugi. Linie i granice liczone są osobno, a para punktów przecinająca datę zmiany jest pomijana w mR. W widoku tygodniowym tydzień należy do okresu wg swojego pierwszego dnia z danymi. Porównanie to obserwacja: różnica nie dowodzi, że spowodowała ją zmiana.</p>
     </details>
     <section class="card">
-      <h2>Wykres X — dzienna przepustowość</h2>
+      <h2>Wykres X — przepustowość</h2>
       <div class="legend" id="tp-legend"></div>
       <svg id="tp-x" class="xmr-svg" role="img" aria-label="Wykres X dziennej przepustowości"></svg>
-      <h2 style="margin-top:16px">Wykres mR — różnice między kolejnymi dniami</h2>
+      <h2 style="margin-top:16px">Wykres mR — różnice między kolejnymi punktami</h2>
       <svg id="tp-mr" class="xmr-svg" role="img" aria-label="Wykres ruchomego rozstępu mR przepustowości"></svg>
       <h3 style="margin:14px 0 6px;font-size:1rem">Rodzaje sygnałów <span style="font-weight:400;font-size:.8rem;color:var(--muted)">(liczba zdarzeń: wykres X / wykres mR)</span></h3>
       <div id="tp-sig-legend" class="sig-legend"></div>
       <div id="tp-sig-missing"></div>
       <div id="tp-details" class="xmr-details" hidden></div>
+    </section>
+    <section class="card">
+      <h2>Interpretacja danych</h2>
+      <div id="tp-interp"></div>
     </section>
     <section class="card">
       <h2>Sygnały do analizy <span class="badge" id="tp-signal-count"></span></h2>
@@ -1083,9 +1093,11 @@ $('reset-local').addEventListener('click', () => {
 window.addEventListener('storage', e => { if (e.key === STORAGE_KEY) { loadState(); refresh(); renderStorageNote(); } });
 
 // ---------- Wykresy XmR (Shewhart) – wspólne dla zakładek Przewidywalność i Tempo dostarczania ----------
-const XMR = { E2:2.66, D4:3.267, RUN:8 };
+// E2/D4 – granice ze średnich; E5/D6 – granice z median (Wheeler).
+const XMR = { E2:2.66, D4:3.267, E5:3.145, D6:3.865, RUN:8 };
+const median = v => { if (!v.length) return null; const t = [...v].sort((a, b) => a - b), h = t.length >> 1; return t.length % 2 ? t[h] : (t[h - 1] + t[h]) / 2; };
 const xui = { from:'', to:'', sizes:[...SIZES], selected:null };
-const tui = { from:'', to:'', weekdays:false, selected:null };
+const tui = { from:'', to:'', weekdays:false, period:'day', selected:null };
 const f1 = v => v == null ? '–' : v.toLocaleString('pl-PL', { minimumFractionDigits:1, maximumFractionDigits:1 });
 const fmtShort = d => `${pad(d.getDate())}.${pad(d.getMonth() + 1)}.${String(d.getFullYear()).slice(2)}`;
 const fmtDay = d => `${fmtDate(d)} (${d.toLocaleDateString('pl-PL', { weekday:'short' })})`;
@@ -1098,6 +1110,7 @@ const SEG_NAMES = ['Przed zmianą', 'Po zmianie'];
 const LT = {
   p:'xmr', tab:'xmr', ui:xui, change:() => state.xmr, compute:() => computeXmr(),
   unit:'dni', vName:'Lead Time', axis:{ x:'Lead Time (dni)', mr:'mR (dni)' }, nouns:['zgłoszenie', 'zgłoszenia', 'zgłoszeń'],
+  median:false, sym:{ x:'X̄', mr:'mR̄' }, thMR:'Średni mR̄ (dni)', formula:'Wzory: UNPL/LNPL = X̄ ± 2,66 × mR̄, URL = 3,267 × mR̄, LRL = 0.',
   thN:'Liczba zgłoszeń', thX:'Średni Lead Time X̄ (dni)', pointLegend:'Zgłoszenie', empty:'Brak zgłoszeń dla wybranych filtrów',
   noData:'Brak aktywnych zgłoszeń dla wybranych rozmiarów i dat.', showIds:true,
   name:r => r.id,
@@ -1114,23 +1127,33 @@ const LT = {
         <dt>${esc(p.b.r.id)}</dt><dd>${p.b.r.lt} dni (${fmtDate(p.b.r.dateObj)})</dd>`,
   detailsNote:'Punkty pozostają w obliczeniach zgodnie z bieżącym statusem. Aby pominąć zgłoszenie, użyj „Wyklucz z analizy” w zakładce Lead Time.',
 };
+// Tempo dostarczania: linie centralne i granice z median; widok dzienny lub tygodniowy (pn–pt).
+const isWeek = () => tui.period === 'week';
 const TP = {
   p:'tp', tab:'tp', ui:tui, change:() => state.tp, compute:() => computeTp(),
-  unit:'szt.', vName:'Przepustowość', axis:{ x:'Przepustowość (szt./dzień)', mr:'mR (szt.)' }, nouns:['dzień', 'dni', 'dni'],
-  thN:'Liczba dni', thX:'Średnia przepustowość X̄ (szt./dzień)', pointLegend:'Dzień', empty:'Brak dni dla wybranych filtrów',
-  noData:'Brak danych przepustowości dla wybranych dat.', showIds:false,
-  name:r => fmtDate(r.dateObj),
-  xLabel:o => `${fmtDay(o.r.dateObj)}, ${o.r.lt} szt.`,
-  xTitle:o => `${fmtDay(o.r.dateObj)} · ${o.r.lt} szt.`,
-  mrLabel:p => `mR ${fmtDate(p.a.r.dateObj)} → ${fmtDate(p.b.r.dateObj)}: ${p.v} szt.`,
-  mrTitle:p => `${fmtDate(p.a.r.dateObj)} → ${fmtDate(p.b.r.dateObj)}: |${p.b.r.lt} − ${p.a.r.lt}| = ${p.v} szt.`,
-  pairTxt:(r) => `${fmtDay(r.dateObj)} (${r.lt} szt.)`,
-  xDetails:(o, d) => `<strong>Dzień ${fmtDay(o.r.dateObj)}</strong><dl style="margin-top:8px">
-        <dt>Przepustowość</dt><dd>${o.r.lt} szt.</dd><dt>Pozycja</dt><dd>${o.i + 1} z ${d.pts.length}</dd>`,
-  mrDetails:p => `<strong>Ruchomy rozstęp ${fmtDate(p.a.r.dateObj)} → ${fmtDate(p.b.r.dateObj)}</strong><dl style="margin-top:8px">
-        <dt>${fmtDay(p.a.r.dateObj)}</dt><dd>${p.a.r.lt} szt.</dd>
-        <dt>${fmtDay(p.b.r.dateObj)}</dt><dd>${p.b.r.lt} szt.</dd>`,
-  detailsNote:'Wszystkie dni z wybranego zakresu pozostają w obliczeniach – oznaczenie i notatka nie zmieniają wyników.',
+  unit:'szt.', vName:'Przepustowość', median:true, sym:{ x:'X̃', mr:'mR̃' }, thMR:'Mediana mR̃ (szt.)', showIds:false,
+  formula:'Wzory (mediany): UNPL/LNPL = X̃ ± 3,145 × mR̃, URL = 3,865 × mR̃, LRL = 0. X̃ – mediana przepustowości, mR̃ – mediana ruchomych rozstępów.',
+  get per() { return isWeek() ? 'tydzień' : 'dzień'; },
+  get axis() { return { x:`Przepustowość (szt./${this.per})`, mr:'mR (szt.)' }; },
+  get nouns() { return isWeek() ? ['tydzień', 'tygodnie', 'tygodni'] : ['dzień', 'dni', 'dni']; },
+  get thN() { return isWeek() ? 'Liczba tygodni' : 'Liczba dni'; },
+  get thX() { return `Mediana przepustowości X̃ (szt./${this.per})`; },
+  get pointLegend() { return isWeek() ? 'Tydzień (suma pn–pt)' : 'Dzień'; },
+  get empty() { return isWeek() ? 'Brak tygodni dla wybranych filtrów' : 'Brak dni dla wybranych filtrów'; },
+  noData:'Brak danych przepustowości dla wybranych dat.',
+  name:r => r.label,
+  xLabel:o => `${o.r.label}, ${o.r.lt} szt.`,
+  xTitle:o => `${o.r.label} · ${o.r.lt} szt.`,
+  mrLabel:p => `mR ${p.a.r.label} → ${p.b.r.label}: ${p.v} szt.`,
+  mrTitle:p => `${p.a.r.label} → ${p.b.r.label}: |${p.b.r.lt} − ${p.a.r.lt}| = ${p.v} szt.`,
+  pairTxt:r => `${esc(r.label)} (${r.lt} szt.)`,
+  xDetails:(o, d) => `<strong>${isWeek() ? 'Tydzień' : 'Dzień'} ${esc(o.r.label)}</strong><dl style="margin-top:8px">
+        <dt>Przepustowość</dt><dd>${o.r.lt} szt.</dd>${o.r.days ? `<dt>Dni robocze w danych</dt><dd>${o.r.days} z 5${o.r.days < 5 ? ' <span class="badge">niepełny tydzień</span>' : ''}</dd>` : ''}
+        <dt>Pozycja</dt><dd>${o.i + 1} z ${d.pts.length}</dd>`,
+  mrDetails:p => `<strong>Ruchomy rozstęp ${esc(p.a.r.label)} → ${esc(p.b.r.label)}</strong><dl style="margin-top:8px">
+        <dt>${esc(p.a.r.label)}</dt><dd>${p.a.r.lt} szt.</dd>
+        <dt>${esc(p.b.r.label)}</dt><dd>${p.b.r.lt} szt.</dd>`,
+  get detailsNote() { return `Wszystkie ${isWeek() ? 'tygodnie' : 'dni'} z wybranego zakresu pozostają w obliczeniach – oznaczenie i notatka nie zmieniają wyników.`; },
 };
 const CFGS = { xmr:LT, tp:TP };
 const last = { xmr:null, tp:null };
@@ -1138,7 +1161,7 @@ const el = (cfg, name) => $(`${cfg.p}-${name}`);
 
 function dateSpan(list) {
   if (!list.length) return '';
-  const a = list[0].r.dateObj, b = list[list.length - 1].r.dateObj;
+  const a = list[0].r.dateObj, b = list[list.length - 1].r.endObj || list[list.length - 1].r.dateObj;
   return +a === +b ? fmtDate(a) : `${fmtDate(a)} – ${fmtDate(b)}`;
 }
 
@@ -1151,12 +1174,15 @@ function segStats(items, seg, cfg) {
   const mean = n ? items.reduce((t, o) => t + o.r.lt, 0) / n : null;
   const mrBar = mrs.length ? mrs.reduce((t, o) => t + o.v, 0) / mrs.length : null;
   const lim = n >= 2;
-  const st = { seg, items, mrs, n, mean, mrBar, lim, prelim: lim && n < SMALL_SAMPLE,
-    unpl: lim ? mean + XMR.E2 * mrBar : null, lnpl: lim ? mean - XMR.E2 * mrBar : null, url: lim ? XMR.D4 * mrBar : null, signals:[] };
+  // Linie centralne: średnie (Lead Time) albo mediany (Tempo dostarczania) – z odpowiednimi stałymi.
+  const cx = cfg.median ? median(items.map(o => o.r.lt)) : mean, cmr = cfg.median ? median(mrs.map(o => o.v)) : mrBar;
+  const [kx, kmr] = cfg.median ? [XMR.E5, XMR.D6] : [XMR.E2, XMR.D4];
+  const st = { seg, items, mrs, n, mean, mrBar, cx, cmr, lim, prelim: lim && n < SMALL_SAMPLE,
+    unpl: lim ? cx + kx * cmr : null, lnpl: lim ? cx - kx * cmr : null, url: lim ? kmr * cmr : null, signals:[] };
   if (!lim) return st;
   st.signals = [
-    ...detectSignals(items.map(o => ({ pos:o.i, v:o.r.lt, o, id:o.r.uid })), 'x', seg, mean, st.unpl, st.lnpl, cfg),
-    ...detectSignals(mrs.map(p => ({ pos:p.b.i, v:p.v, p, id:p.b.r.uid })), 'mr', seg, mrBar, st.url, 0, cfg),
+    ...detectSignals(items.map(o => ({ pos:o.i, v:o.r.lt, o, id:o.r.uid })), 'x', seg, cx, st.unpl, st.lnpl, cfg),
+    ...detectSignals(mrs.map(p => ({ pos:p.b.i, v:p.v, p, id:p.b.r.uid })), 'mr', seg, cmr, st.url, 0, cfg),
   ];
   return st;
 }
@@ -1174,7 +1200,7 @@ const PURPLE_MSG = 'Sprawdź, czy zmienił się proces i czy warto zaktualizowa�
 // units: [{pos, v, o|p, id}] w kolejności; C – linia centralna, G – górna granica, D – dolna granica (dla mR D = 0).
 function detectSignals(units, chart, seg, C, G, D, cfg = LT) {
   const out = [], isX = chart === 'x', U = cfg.unit;
-  const cName = isX ? 'X̄' : 'mR̄', vName = isX ? cfg.vName : 'mR';
+  const cName = isX ? cfg.sym.x : cfg.sym.mr, vName = isX ? cfg.vName : 'mR';
   const sideTxt = s => s > 0 ? 'powyżej linii centralnej' : 'poniżej linii centralnej';
   const mk = (rule, side, span, hits, extra) => {
     const k = side > 0 ? 'u' : 'd';
@@ -1260,14 +1286,27 @@ function computeXmr() {
 }
 
 function computeTp() {
-  const d = dateFilter(tui);
-  const pts = d.error ? [] : tpSource
-    .filter(r => (!tui.weekdays || r.dateObj.getDay() % 6 !== 0) && (!d.from || r.dateObj >= d.from) && (!d.to || r.dateObj <= d.to))
-    .map((r, i) => ({ r, i }));
+  const d = dateFilter(tui), week = isWeek();
+  const days = d.error ? [] : tpSource
+    .filter(r => (!(tui.weekdays || week) || r.dateObj.getDay() % 6 !== 0) && (!d.from || r.dateObj >= d.from) && (!d.to || r.dateObj <= d.to));
+  let rows = days.map(r => ({ ...r, label:fmtDay(r.dateObj) }));
+  if (week) {
+    // Suma pn–pt w każdym tygodniu kalendarzowym; dateObj/endObj – pierwszy i ostatni dzień z danymi.
+    const byWeek = new Map();
+    days.forEach(r => {
+      const mon = new Date(r.dateObj); mon.setDate(mon.getDate() - (mon.getDay() + 6) % 7);
+      const k = toISO(mon);
+      if (!byWeek.has(k)) byWeek.set(k, { uid:'tpw:' + k, id:k, size:'', dateObj:r.dateObj, endObj:r.dateObj, lt:0, days:0 });
+      const w = byWeek.get(k); w.lt += r.lt; w.days++; w.endObj = r.dateObj;
+    });
+    rows = [...byWeek.values()].map(w => ({ ...w, label:`tydz. ${pad(w.dateObj.getDate())}.${pad(w.dateObj.getMonth() + 1)}–${fmtDate(w.endObj)}` }));
+  }
+  const pts = rows.map((r, i) => ({ r, i }));
   finishXmr(d, pts, TP);
-  // Brakujące dni kalendarzowe między kolejnymi wierszami (z pominięciem weekendów, gdy filtr jest włączony)
+  d.partial = week ? pts.filter(o => o.r.days < 5) : [];
+  // Brakujące dni kalendarzowe między kolejnymi dniami (bez weekendów, gdy są pomijane)
   d.gaps = 0;
-  pts.forEach((o, k) => {
+  if (!week) pts.forEach((o, k) => {
     if (!k) return;
     for (let t = new Date(pts[k - 1].r.dateObj); ; ) {
       t.setDate(t.getDate() + 1);
@@ -1276,6 +1315,81 @@ function computeTp() {
     }
   });
   return d;
+}
+
+// ---------- Tempo dostarczania: interpretacja wyników ----------
+function renderTpInterp(d) {
+  const box = $('tp-interp'), N = d.pts.length;
+  if (!N || d.error) { box.innerHTML = '<p style="color:var(--muted)">Brak danych do interpretacji.</p>'; return; }
+  const per = TP.per, perGen = isWeek() ? 'tygodni' : 'dni', perIns = isWeek() ? 'tygodniami' : 'dniami', U = 'szt.';
+  const cur = d.segs[d.segs.length - 1], vals = cur.items.map(o => o.r.lt);
+  const list = (arr, f, max = 6) => arr.slice(0, max).map(f).join(', ') + (arr.length > max ? ` i ${arr.length - max} innych` : '');
+  const sig = (rule, chart, side) => d.signals.filter(s => s.rule === rule && s.chart === chart && (side == null || s.side === side));
+  const out = [];
+  const anyLim = d.segs.some(s => s.lim);
+  if (!anyLim) { box.innerHTML = '<p class="note warn">Za mało danych do wyznaczenia granic i interpretacji (potrzebne co najmniej 2 punkty).</p>'; return; }
+
+  // 1. Werdykt
+  const strong = sig('r1', 'x').length + sig('r1', 'mr').length;
+  if (!d.signals.length)
+    out.push(['ok', `<strong>Proces przewidywalny.</strong> Żadna z czterech reguł nie wskazuje sygnału – zmienność tempa dostarczania to rutynowy „szum” obecnego sposobu pracy, a historia jest wiarygodną podstawą prognoz.`]);
+  else
+    out.push([strong ? 'bad' : 'warn', `<strong>${strong ? 'Proces nieprzewidywalny' : 'Proces z sygnałami umiarkowanymi'}.</strong> Wykryto ${d.signals.length} ${plural(d.signals.length, ['zdarzenie', 'zdarzenia', 'zdarzeń'])}: `
+      + RULE_IDS.map(k => [k, sig(k, 'x').length, sig(k, 'mr').length]).filter(([, x, m]) => x + m).map(([k, x, m]) => `${RULES[k].name.toLowerCase()} – X ${x} / mR ${m}`).join('; ')
+      + `. ${strong ? 'Tempo dostarczania zawiera wyjątkowe zdarzenia – zanim użyjesz historii do prognoz, wyjaśnij ich przyczyny.' : 'Warto obserwować proces – sygnały wskazują na możliwe przesunięcie poziomu tempa.'}`]);
+
+  // 2. Typowy poziom i zakres rutynowej zmienności (bieżący / jedyny okres)
+  if (cur.lim) {
+    const lo = Math.max(0, cur.lnpl);
+    out.push(['', `<strong>Typowe tempo${d.changeDate ? ' (po zmianie)' : ''}:</strong> mediana X̃ = ${f1(cur.cx)} ${U}/${per} (średnia ${f1(cur.mean)}). `
+      + `Rutynowo można oczekiwać od ${f1(lo)} do ${f1(cur.unpl)} ${U} na ${per}${cur.lnpl <= 0 ? ' – dolna granica wypada poniżej zera, więc nawet ' + (isWeek() ? 'tydzień' : 'dzień') + ' bez dostaw mieści się w normalnej zmienności' : ''}. `
+      + `Typowa zmiana między kolejnymi ${perIns} (mR̃) to ${f1(cur.cmr)} ${U}, a skok większy niż ${f1(cur.url)} ${U} jest wyjątkowy.`
+      + (cur.prelim ? ` <em>Granice są wstępne – tylko ${cur.n} ${plural(cur.n, TP.nouns)} (zalecane ≥ ${SMALL_SAMPLE}).</em>` : '')]);
+    if (cur.cx === 0)
+      out.push(['warn', `<strong>Mediana = 0:</strong> w ponad połowie ${perGen} nic nie zostało ukończone. Linia centralna leży na zerze, więc każdy ${isWeek() ? 'tydzień' : 'dzień'} z dostawą jest „powyżej mediany”, a reguły serii i progów 1/3–2/3 wskazują wiele sygnałów wynikających głównie z nieregularnego kończenia pracy (partiami). ${isWeek() ? '' : 'Przełącz na widok tygodniowy, aby ocenić stabilność tempa.'}`]);
+    if (cur.mean > cur.cx * 1.2 && cur.mean - cur.cx >= .5)
+      out.push(['', `<strong>Asymetria:</strong> średnia (${f1(cur.mean)}) jest wyraźnie wyższa od mediany (${f1(cur.cx)}) – większość ${perGen} ma niskie tempo, a pojedyncze ${isWeek() ? 'tygodnie' : 'dni'} z dużą liczbą ukończeń podnoszą średnią. To typowe dla dostarczania partiami; granice z median są na to mniej wrażliwe niż granice ze średnich.`]);
+  }
+
+  // 3. Okresy bez dostaw
+  const zeros = d.pts.filter(o => o.r.lt === 0);
+  if (zeros.length) {
+    const wk = isWeek() ? 0 : zeros.filter(o => o.r.dateObj.getDay() % 6 === 0).length;
+    const share = Math.round(zeros.length / N * 100);
+    out.push([share >= 40 ? 'warn' : '', `<strong>Bez dostaw:</strong> ${zeros.length} z ${N} ${perGen} (${share}%) ma przepustowość 0${wk ? `, w tym ${wk} dni weekendowych` : ''}.`
+      + (!isWeek() && share >= 40 ? ' Tak wiele zer oznacza, że praca kończy się nieregularnie (partiami) – widok tygodniowy lepiej pokazuje faktyczne tempo do planowania.' : '')]);
+  }
+
+  // 4. Punkty poza granicami
+  const hi = sig('r1', 'x', 1), lo = sig('r1', 'x', -1);
+  if (hi.length) out.push(['', `<strong>Wyjątkowo wysokie tempo</strong> (powyżej UNPL): ${list(hi, s => `${esc(s.hits[0].o.r.label)} – ${s.hits[0].v} ${U}`)}. Sprawdź, czy to zbiorcze zamknięcia (np. release, koniec sprintu, porządkowanie tablicy) – takie piki zawyżają średnią, ale nie oznaczają trwale szybszej pracy.`]);
+  if (lo.length) out.push(['', `<strong>Wyjątkowo niskie tempo</strong> (poniżej LNPL): ${list(lo, s => `${esc(s.hits[0].o.r.label)} – ${s.hits[0].v} ${U}`)}. Poszukaj przyczyn: blokady, urlopy, zależności zewnętrzne.`]);
+  const jumps = sig('r1', 'mr');
+  if (jumps.length) out.push(['', `<strong>Gwałtowne skoki</strong> między kolejnymi ${perIns} (mR powyżej URL): ${jumps.length} ${plural(jumps.length, ['raz', 'razy', 'razy'])}, np. ${list(jumps, s => `${esc(s.hits[0].p.a.r.label)} → ${esc(s.hits[0].p.b.r.label)} (${s.hits[0].v} ${U})`, 3)}. Tempo zmienia się skokowo – zwykle oznacza to kumulowanie pracy i oddawanie jej paczkami.`]);
+
+  // 5. Przesunięcia poziomu
+  const runs = sig('r4', 'x'), mod = [...sig('r2', 'x'), ...sig('r3', 'x')];
+  if (runs.length) out.push(['warn', `<strong>Trwałe przesunięcie poziomu:</strong> ${list(runs, s => `${signalWhere(s)} – ${s.span.length} ${plural(s.span.length, TP.nouns)} ${s.side > 0 ? 'powyżej' : 'poniżej'} mediany`, 4)}. ${PURPLE_MSG}`]);
+  if (mod.length) out.push(['', `<strong>Umiarkowane sygnały na wykresie X</strong> (${mod.length}): ${list(mod, s => `${signalWhere(s)} ${s.side > 0 ? '↑' : '↓'}`, 4)} – kilka ${perGen} z rzędu wyraźnie ${mod.every(s => s.side > 0) ? 'powyżej' : mod.every(s => s.side < 0) ? 'poniżej' : 'odbiega od'} typowego poziomu.`]);
+
+  // 6. Przed / po zmianie
+  if (d.changeDate && d.segs.every(s => s.lim)) {
+    const [a, b] = d.segs, dx = b.cx - a.cx;
+    out.push(['', `<strong>Przed / po zmianie:</strong> mediana tempa ${dx > 0 ? 'wzrosła' : dx < 0 ? 'spadła' : 'się nie zmieniła'} z ${f1(a.cx)} do ${f1(b.cx)} ${U}/${per}, a mediana mR z ${f1(a.cmr)} do ${f1(b.cmr)} (${b.cmr < a.cmr ? 'tempo stało się bardziej równomierne' : b.cmr > a.cmr ? 'tempo stało się mniej równomierne' : 'bez zmiany równomierności'}). To obserwacja – nie dowodzi, że różnicę spowodowała zmiana.`]);
+  }
+
+  // 7. Wskazówka do prognoz (percentyle bieżącego okresu)
+  if (vals.length >= 2) {
+    const p50 = percentile(vals, 50), p15 = percentile(vals, 15);
+    out.push(['', `<strong>Do prognoz:</strong> w ${d.changeDate ? 'okresie po zmianie' : 'analizowanym okresie'} w połowie ${perGen} dostarczono co najmniej ${p50} ${U}, a w ok. 85% ${perGen} – co najmniej ${p15} ${U} (percentyle metodą najbliższej rangi). `
+      + (d.signals.length ? 'Ze względu na sygnały traktuj te wartości ostrożnie.' : 'Przy braku sygnałów to rozsądna podstawa planowania.')
+      + (!isWeek() ? ' Do planowania zwykle lepiej nadaje się widok tygodniowy.' : '')]);
+  }
+  if (d.partial?.length) out.push(['warn', `<strong>Niepełne tygodnie:</strong> ${list(d.partial, o => `${esc(o.r.label)} (${o.r.days} z 5 dni)`)} – ich niższa suma może wynikać z braku danych, a nie wolniejszej pracy.`]);
+
+  const cls = { ok:'note info', bad:'note empty', warn:'note warn', '':'' };
+  box.innerHTML = out.map(([c, t]) => c ? `<p class="${cls[c]}" style="margin:0 0 10px">${t}</p>` : `<p style="margin:0 0 10px;font-size:.92rem">${t}</p>`).join('')
+    + '<p style="margin:0;font-size:.8rem;color:var(--muted)">Interpretacja jest generowana automatycznie na podstawie bieżących filtrów i reguł sygnałów – to punkt wyjścia do rozmowy zespołu, nie diagnoza przyczyn.</p>';
 }
 
 function niceScale(raw) {
@@ -1332,7 +1446,7 @@ function drawXmr(kind, d, hl, cfg) {
   const xi = i => m.l + (i + .5) * slot;
   const isX = kind === 'x';
   const vals = isX ? d.pts.map(o => o.r.lt) : d.mrs.map(p => p.v);
-  const lims = d.segs.filter(s => s.lim).flatMap(s => isX ? [s.mean, s.unpl, Math.max(0, s.lnpl)] : [s.mrBar, s.url]);
+  const lims = d.segs.filter(s => s.lim).flatMap(s => isX ? [s.cx, s.unpl, Math.max(0, s.lnpl)] : [s.cmr, s.url]);
   const { max:yMax, step } = niceScale(Math.max(0, ...vals, ...lims) * 1.08);
   const y = v => m.t + ph - Math.max(0, v) / yMax * ph;
   const fs = narrow ? 10 : 11;
@@ -1362,9 +1476,9 @@ function drawXmr(kind, d, hl, cfg) {
     const x1 = xi(sg.items[0].i) - slot / 2, x2 = xi(sg.items[sg.n - 1].i) + slot / 2;
     const star = sg.prelim ? '*' : '';
     const defs = isX
-      ? [{ v:sg.mean, c:'#3e2723', dash:'', t:`X̄ ${f1(sg.mean)}` }, { v:sg.unpl, c:'#c62828', dash:'7 4', t:`UNPL${star} ${f1(sg.unpl)}` },
+      ? [{ v:sg.cx, c:'#3e2723', dash:'', t:`${cfg.sym.x} ${f1(sg.cx)}` }, { v:sg.unpl, c:'#c62828', dash:'7 4', t:`UNPL${star} ${f1(sg.unpl)}` },
          ...(sg.lnpl >= 0 ? [{ v:sg.lnpl, c:'#c62828', dash:'7 4', t:`LNPL${star} ${f1(sg.lnpl)}` }] : [])]
-      : [{ v:sg.mrBar, c:'#3e2723', dash:'', t:`mR̄ ${f1(sg.mrBar)}` }, { v:sg.url, c:'#c62828', dash:'7 4', t:`URL${star} ${f1(sg.url)}` }];
+      : [{ v:sg.cmr, c:'#3e2723', dash:'', t:`${cfg.sym.mr} ${f1(sg.cmr)}` }, { v:sg.url, c:'#c62828', dash:'7 4', t:`URL${star} ${f1(sg.url)}` }];
     defs.forEach(o => {
       s += `<line x1="${x1}" x2="${x2}" y1="${y(o.v)}" y2="${y(o.v)}" stroke="${o.c}" stroke-width="1.5" ${o.dash ? `stroke-dasharray="${o.dash}"` : ''} pointer-events="none"/>`;
       if (k === d.segs.length - 1) labels.push({ ...o, ly:y(o.v) });
@@ -1416,7 +1530,7 @@ function drawXmr(kind, d, hl, cfg) {
 
 function signalWhere(sg) {
   const a = sg.chart === 'x' ? sg.hits[0].o.r.dateObj : sg.hits[0].p.a.r.dateObj;
-  const b = sg.chart === 'x' ? sg.hits[sg.hits.length - 1].o.r.dateObj : sg.hits[sg.hits.length - 1].p.b.r.dateObj;
+  const lastR = sg.chart === 'x' ? sg.hits[sg.hits.length - 1].o.r : sg.hits[sg.hits.length - 1].p.b.r, b = lastR.endObj || lastR.dateObj;
   return +a === +b ? fmtDate(a) : `${fmtDate(a)} – ${fmtDate(b)}`;
 }
 const signalIds = sg => sg.hits.map(u => sg.chart === 'x' ? u.o.r.id : `${u.p.a.r.id} → ${u.p.b.r.id}`).join(', ');
@@ -1491,16 +1605,16 @@ function renderXmrTable(d, cfg) {
   el(cfg, 'table-title').textContent = two ? 'Przed / Po zmianie' : 'Granice procesu';
   const lnpl = sg => sg.lim ? `${f1(sg.lnpl)}${sg.lnpl < 0 ? ' <span class="badge">poza skalą</span>' : ''}` : '–';
   const row = (name, sg) => `<tr><td>${name}${sg.prelim ? ' <span class="badge">wstępne</span>' : ''}<div class="meta" style="font-size:.75rem;color:var(--muted)">${dateSpan(sg.items) || 'brak danych'}</div></td>
-    <td class="num">${sg.n}</td><td class="num">${f1(sg.mean)}</td><td class="num">${f1(sg.mrBar)}</td><td class="num">${sg.lim ? f1(sg.unpl) : '–'}</td>
+    <td class="num">${sg.n}</td><td class="num">${f1(sg.cx)}</td><td class="num">${f1(sg.cmr)}</td><td class="num">${sg.lim ? f1(sg.unpl) : '–'}</td>
     <td class="num">${lnpl(sg)}</td><td class="num">${sg.lim ? f1(sg.url) : '–'}</td></tr>`;
   const diff = (a, b) => a == null || b == null ? '–' : (b - a > 0 ? '+' : '') + f1(b - a);
   let body = two ? row(SEG_NAMES[0], d.segs[0]) + row(SEG_NAMES[1], d.segs[1]) : row(cfg.change().changeOn ? 'Cała próba' : 'Próba', d.segs[0]);
   if (two) {
     const [a, b] = d.segs;
     body += `<tr style="font-weight:600"><td>Różnica (Po − Przed)</td><td class="num">${b.n - a.n > 0 ? '+' : ''}${b.n - a.n}</td>
-      <td class="num">${diff(a.mean, b.mean)}</td><td class="num">${diff(a.mrBar, b.mrBar)}</td><td class="num">${diff(a.unpl, b.unpl)}</td><td></td><td></td></tr>`;
+      <td class="num">${diff(a.cx, b.cx)}</td><td class="num">${diff(a.cmr, b.cmr)}</td><td class="num">${diff(a.unpl, b.unpl)}</td><td></td><td></td></tr>`;
   }
-  el(cfg, 'table').innerHTML = `<thead><tr><th>Okres</th><th class="num">${cfg.thN}</th><th class="num">${cfg.thX}</th><th class="num">Średni mR̄ (${U})</th>
+  el(cfg, 'table').innerHTML = `<thead><tr><th>Okres</th><th class="num">${cfg.thN}</th><th class="num">${cfg.thX}</th><th class="num">${cfg.thMR}</th>
     <th class="num">UNPL (${U})</th><th class="num">LNPL (${U})</th><th class="num">URL (${U})</th></tr></thead><tbody>${body}</tbody>`;
   const notes = [];
   if (two) {
@@ -1510,7 +1624,7 @@ function renderXmrTable(d, cfg) {
     notes.push('To porównanie obserwacji: różnica między okresami nie dowodzi sama w sobie, że spowodowała ją zmiana procesu.');
   }
   if (d.segs.some(s => s.prelim)) notes.push(`* Granice wstępne – mniej niż ${SMALL_SAMPLE} ${cfg.nouns[2]} w okresie.`);
-  notes.push('Wzory: UNPL/LNPL = X̄ ± 2,66 × mR̄, URL = 3,267 × mR̄, LRL = 0.');
+  notes.push(cfg.formula);
   el(cfg, 'table-note').innerHTML = notes.map(t => `<p style="margin:4px 0;font-size:.85rem">${t}</p>`).join('');
 }
 
@@ -1539,6 +1653,7 @@ function renderXmrTab(cfg) {
   if (cfg === TP) {
     if (tpError) notes.unshift(['empty', tpError]);
     if (tpDupes) notes.push(['warn', `W pliku ${tpDupes} ${plural(tpDupes, ['data występuje', 'daty występują', 'dat występuje'])} więcej niż raz – wartości z tego samego dnia zostały zsumowane.`]);
+    if (N && d.partial.length) notes.push(['warn', `${d.partial.length} ${plural(d.partial.length, ['tydzień jest niepełny', 'tygodnie są niepełne', 'tygodni jest niepełnych'])} (mniej niż 5 dni roboczych w danych) – suma może być zaniżona.`]);
     if (N && d.gaps) notes.push(['warn', `W wybranym zakresie brakuje ${d.gaps} ${plural(d.gaps, ['dnia', 'dni', 'dni'])} w pliku – kolejne punkty nie zawsze są sąsiednimi dniami.`]);
   }
   el(cfg, 'notes').innerHTML = notes.map(([c, t]) => `<p class="note ${c}">${esc(t)}</p>`).join('');
@@ -1554,6 +1669,7 @@ function renderXmrTab(cfg) {
   renderXmrDetails(d, cfg);
   renderXmrSignals(d, cfg);
   renderXmrTable(d, cfg);
+  if (cfg === TP) renderTpInterp(d);
 }
 const renderXmr = () => renderXmrTab(LT);
 const renderTp = () => renderXmrTab(TP);
@@ -1572,6 +1688,12 @@ document.querySelectorAll('.xmr-size').forEach(c => c.addEventListener('change',
   xui.sizes = [...document.querySelectorAll('.xmr-size:checked')].map(c => c.value); renderXmr();
 }));
 $('tp-weekdays').addEventListener('change', e => { tui.weekdays = e.target.checked; renderTp(); });
+document.querySelectorAll('input[name=tp-period]').forEach(r => r.addEventListener('change', e => {
+  tui.period = e.target.value; tui.selected = null;
+  $('tp-weekdays').disabled = isWeek();
+  $('tp-weekdays-label').style.opacity = isWeek() ? .5 : 1;
+  renderTp();
+}));
 
 function xmrSelect(cfg, sel, scroll) {
   const ui = cfg.ui;
